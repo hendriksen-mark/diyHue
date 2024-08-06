@@ -1,6 +1,6 @@
 import configManager
 import logManager
-from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstance, GeofenceClient, StreamEvent
+from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstance, GeofenceClient, SmartScene, StreamEvent
 import uuid
 import json
 import weakref
@@ -19,7 +19,7 @@ logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-v2Resources = {"light": {}, "scene": {}, "grouped_light": {}, "room": {}, "zone": {
+v2Resources = {"light": {}, "scene": {}, "smart_scene": {}, "grouped_light": {}, "room": {}, "zone": {
 }, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "zigbee_device_discovery": {}, "device": {}, "device_power": {},
 "geofence_client": {}, "motion": {}}
 
@@ -30,8 +30,8 @@ def getObject(element, v2uuid):
     elif element in v2Resources and v2uuid in v2Resources[element]:
         logging.debug("Cache Hit for " + element)
         return v2Resources[element][v2uuid]()
-    elif element in ["light", "scene", "grouped_light"]:
-        for v1Element in ["lights", "groups", "scenes"]:
+    elif element in ["light", "scene", "grouped_light", "smart_scene"]:
+        for v1Element in ["lights", "groups", "scenes", "smart_scene"]:
             for key, obj in bridgeConfig[v1Element].items():
                 if obj.id_v2 == v2uuid:
                     v2Resources[element][v2uuid] = weakref.ref(obj)
@@ -248,6 +248,9 @@ class ClipV2(Resource):
         # scenes
         for key, scene in bridgeConfig["scenes"].items():
             data.append(scene.getV2Api())
+        # smart_scene
+        for key, smartscene in bridgeConfig["smart_scene"].items():
+            data.append(smartscene.getV2Api())
         # lights
         for key, light in bridgeConfig["lights"].items():
             data.append(light.getV2Api())
@@ -304,6 +307,9 @@ class ClipV2Resource(Resource):
         if resource == "scene":
             for key, scene in bridgeConfig["scenes"].items():
                 response["data"].append(scene.getV2Api())
+        elif resource == "smart_scene":
+            for key, smartscene in bridgeConfig["smart_scene"].items():
+                response["data"].append(smartscene.getV2Api())
         elif resource == "light":
             for key, light in bridgeConfig["lights"].items():
                 response["data"].append(light.getV2Api())
@@ -443,6 +449,17 @@ class ClipV2Resource(Resource):
                             if "gradient" in scene:
                                 sceneState["gradient"] = scene["gradient"]
                             newObject.lightstates[lightObj] = sceneState
+        elif resource == "smart_scene":
+            new_object_id = nextFreeId(bridgeConfig, "smart_scene")
+            objCreation = {
+                "id_v1": new_object_id,
+                "name": postDict["metadata"]["name"],
+                "image": postDict["metadata"]["image"]["rid"] if "image" in postDict["metadata"] else None,
+                "action": postDict["recall"]["action"],
+            }
+            objCreation.update(postDict)
+            newObject = SmartScene.SmartScene(objCreation)
+            bridgeConfig["smart_scene"][new_object_id] = newObject
         elif resource == "behavior_instance":
             newObject = BehaviorInstance.BehaviorInstance(postDict)
             bridgeConfig["behavior_instance"][newObject.id_v2] = newObject
@@ -518,7 +535,7 @@ class ClipV2ResourceId(Resource):
         if not object:
             return {"errors": [], "data": []}
 
-        if resource in ["scene", "light"]:
+        if resource in ["scene", "light", "smart_scene"]:
             return {"errors": [], "data": [object.getV2Api()]}
         elif resource == "room":
             return {"errors": [], "data": [object.getV2Room()]}
@@ -572,6 +589,15 @@ class ClipV2ResourceId(Resource):
                 object.speed = putDict["speed"]
             if "palette" in putDict:
                 object.palette = putDict["palette"]
+            if "metadata" in putDict:
+                object.name = putDict["metadata"]["name"]
+        elif resource == "smart_scene":
+            if "recall" in putDict:
+                object.activate(putDict)
+            if "transition_duration" in putDict:
+                object.speed = putDict["transition_duration"]
+            if "week_timeslots" in putDict:
+                object.timeslots = putDict["week_timeslots"]
             if "metadata" in putDict:
                 object.name = putDict["metadata"]["name"]
         elif resource == "grouped_light":
