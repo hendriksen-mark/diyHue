@@ -164,8 +164,8 @@ class Group():
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2, "type": "grouped_light",
                                    "owner": {
-                                       "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
-                                       "rtype": "room" if self.type == "Room" else "zone"
+                                       "rid": self.getV2Room()["id"] if self.type == "room" else self.getV2Zone()["id"],
+                                       "rtype": "room" if self.type == "room" else "zone"
                                    }
                                    }],
                          "id": str(uuid.uuid4()),
@@ -188,7 +188,7 @@ class Group():
                 sensors.append(sensor().id_v1)
         result["lights"] = lights
         result["sensors"] = sensors
-        result["type"] = self.type
+        result["type"] = self.type.capitalize()
         result["state"] = self.update_state()
         result["recycle"] = False
         if self.id_v1 == "0":

@@ -144,7 +144,7 @@ def v2BridgeHome():
         result["services"].append(light.getBridgeHome())
         result["children"].append({"rid": light.getDevice()["id"], "rtype": "device"})
     for key, group in bridgeConfig["groups"].items():
-        if group.type == "Room":
+        if group.type in ["room", "Room"]:
             result["children"].append({"rid": group.getV2Room()["id"], "rtype": "room"})
     for key, sensor in bridgeConfig["sensors"].items():
         if sensor.getBridgeHome():
@@ -244,9 +244,9 @@ class ClipV2(Resource):
             data.append(light.getV2Api())
         # room
         for key, group in bridgeConfig["groups"].items():
-            if group.type == "Room":
+            if group.type in ["room", "Room"]:
                 data.append(group.getV2Room())
-            elif group.type == "Zone":
+            elif group.type in ["zone", "Zone"]:
                 data.append(group.getV2Zone())
         # group
         for key, group in bridgeConfig["groups"].items():
@@ -300,11 +300,11 @@ class ClipV2Resource(Resource):
                 response["data"].append(light.getV2Api())
         elif resource == "room":
             for key, group in bridgeConfig["groups"].items():
-                if group.type == "Room":
+                if group.type in ["room", "Room"]:
                     response["data"].append(group.getV2Room())
         elif resource == "zone":
             for key, group in bridgeConfig["groups"].items():
-                if group.type == "Zone":
+                if group.type in ["zone", "Zone"]:
                     response["data"].append(group.getV2Zone())
         elif resource == "grouped_light":
             for key, group in bridgeConfig["groups"].items():
@@ -459,9 +459,9 @@ class ClipV2Resource(Resource):
                 "id_v1": new_object_id,
                 "name": postDict["metadata"]["name"]
             }
-            objCreation["type"] = "Room" if resource == "room" else "Zone"
+            objCreation["type"] = "room" if resource == "room" else "zone"
             if "archetype" in postDict["metadata"]:
-                objCreation["icon_class"] = postDict["metadata"]["archetype"].replace("_", " ")
+                objCreation["icon_class"] = postDict["metadata"]["archetype"].replace("_", " ").capitalize()
             objCreation.update(postDict)
             newObject = Group.Group(objCreation)
             if "children" in postDict:
@@ -578,7 +578,7 @@ class ClipV2ResourceId(Resource):
                 if "name" in putDict["metadata"]:
                     v1Api["name"] = putDict["metadata"]["name"]
                 if "archetype" in putDict["metadata"]:
-                    v1Api["icon_class"] = putDict["metadata"]["archetype"].replace("_", " ")
+                    v1Api["icon_class"] = putDict["metadata"]["archetype"].replace("_", " ").capitalize()
             if "children" in putDict:
                 for children in putDict["children"]:
                     obj = getObject(

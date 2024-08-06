@@ -161,10 +161,10 @@ class ResourceElements(Resource):
         postDict["owner"] = bridgeConfig["apiUsers"][username]
         if resource == "groups":
             if "type" in postDict:
-                if postDict["type"] == "Zone":
+                if postDict["type"] in ["Zone", "zone"]:
                     v2Resource = "zone"
                     bridgeConfig[resource][new_object_id] = Group.Group(postDict)
-                elif postDict["type"] == "Room":
+                elif postDict["type"] in ["Room", "room"]:
                     v2Resource = "room"
                     bridgeConfig[resource][new_object_id] = Group.Group(postDict)
                 elif postDict["type"] == "Entertainment":
