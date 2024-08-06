@@ -5,7 +5,6 @@ import weakref
 import uuid
 import json
 import os
-import requests
 from subprocess import Popen
 from threading import Thread
 from time import sleep

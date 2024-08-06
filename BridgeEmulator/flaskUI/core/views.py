@@ -9,7 +9,6 @@ from HueObjects import ApiUser
 from flaskUI.core import User
 from lights.light_types import lightTypes
 from subprocess import check_output
-from pprint import pprint
 import os
 import sys
 import logManager
@@ -69,7 +68,7 @@ def get_light_types():
 def pairTradfri():
     try:
         data = request.get_json(force=True)
-        pprint(data)
+        logging.info(data)
         cmd = ["coap-client-gnutls", "-m", "post", "-u", "Client_identity", "-k", data["tradfriCode"], "-e", "{\"9090\":\"" + data["identity"] + "\"}", "coaps://" + data["tradfriGwIp"] + ":5684/15011/9063"]
         registration = json.loads(check_output(cmd).decode('utf-8').rstrip('\n').split("\n")[-1])
         if "9091" in registration:

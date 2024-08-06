@@ -1,7 +1,6 @@
 import logManager
 import requests
 import base64
-import urllib.parse
 import json
 from time import sleep
 
