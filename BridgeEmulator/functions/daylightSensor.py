@@ -25,6 +25,7 @@ def daylightSensor(tz, sensor):#tz = timezone
         deltaSunriseOffset = deltaSunrise.total_seconds() + sensor.config["sunriseoffset"] * 60
         logging.info("deltaSunsetOffset: " + str(deltaSunsetOffset))
         logging.info("deltaSunriseOffset: " + str(deltaSunriseOffset))
+        sensor.config["sunset"] = datetime.strptime(str(s['sunset']), "%Y-%m-%d %H:%M:%S.%f%z").astimezone().strftime("%H:%M:%S")
         current_time =  datetime.now(timezone.utc).replace(tzinfo=None)
         if deltaSunriseOffset < 0 and deltaSunsetOffset > 0:
             sensor.state["daylight"] = True

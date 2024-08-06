@@ -13,7 +13,6 @@ from time import sleep
 from functions.core import nextFreeId
 from datetime import datetime, timezone
 from functions.scripts import behaviorScripts
-from pprint import pprint
 from lights.discover import scanForLights
 
 logging = logManager.logger.get_logger(__name__)
@@ -107,13 +106,18 @@ def v2BridgeZigBee():
 def v2BridgeZigBeeDiscovery():
     return{"id": str(uuid.uuid5(
         uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'zigbee_device_discovery')),
-           "owner": {
-              "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
-              "rtype": "device"
-       },
-       "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
-       "type": "zigbee_device_discovery",
-       }
+        "owner": {
+            "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')),
+            "rtype": "device"
+        },
+        "action": {
+            "action_type_values": [
+                "search"
+            ]
+        },
+        "status": bridgeConfig["config"]["zigbee_device_discovery_info"]["status"],
+        "type": "zigbee_device_discovery",
+        }
 
 
 def v2GeofenceClient():
@@ -129,6 +133,7 @@ def v2GeofenceClient():
 def v2BridgeHome():
     result = {}
     result["children"] = []
+    result["children"].append({"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'device')), "rtype": "device"})
     result["grouped_services"] = []
     if len(bridgeConfig["lights"]) > 0:
         result["grouped_services"].append({
@@ -169,6 +174,10 @@ def geoLocation():
     return {
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'geolocation')),
         "is_configured": bridgeConfig["sensors"]["1"].config["configured"],
+        "sun_today": {
+            "sunset_time": bridgeConfig["sensors"]["1"].config["sunset"],
+            "day_type": "normal_day"
+        },
         "type": "geolocation"
     }
 
@@ -181,10 +190,10 @@ def v2BridgeDevice():
     result["metadata"] = {"archetype": "bridge_v2", "name": config["name"]}
     result["product_data"] = {
         "certified": True,
-        "manufacturer_name": "Signify Netherlands B.V.",
+        "manufacturer_name": "DiyHue",
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
-        "product_name": "Philips hue",
+        "product_name": "DiyHue Emulator",
         "software_version": config["apiversion"][:5] + config["swversion"]
     }
     result["services"] = [
