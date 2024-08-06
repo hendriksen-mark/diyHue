@@ -15,8 +15,6 @@ class Group():
         self.id_v2 = data["id_v2"] if "id_v2" in data else genV2Uuid()
         if "owner" in data:
             self.owner = data["owner"]
-        else:
-            self.owner = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')), "rtype": "device"}
         self.icon_class = data["class"] if "class" in data else "Other"
         self.lights = []
         self.action = {"on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [
@@ -27,7 +25,7 @@ class Group():
         self.dxState = {"all_on": None, "any_on": None}
 
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+                         "data": [self.getV2Room() if self.type == "room" else self.getV2Zone()],
                          "id": str(uuid.uuid4()),
                          "type": "add"
                          }
@@ -57,9 +55,8 @@ class Group():
         streamMessage["id_v1"] = "/groups/" + self.id_v1
         StreamEvent(streamMessage)
         ### room / zone ####
-        elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
-        elementType = "room" if self.type == "Room" else "zone"
+        elementId = self.getV2Room()["id"] if self.type == "room" else self.getV2Zone()["id"]
+        elementType = "room" if self.type == "room" else "zone"
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": elementId,  "id_v1": "/groups/" + self.id_v1, "type": elementType}],
                          "id": str(uuid.uuid4()),
@@ -71,8 +68,8 @@ class Group():
     def add_light(self, light):
         self.lights.append(weakref.ref(light))
         elementId = self.getV2Room(
-        )["id"] if self.type == "Room" else self.getV2Zone()["id"]
-        elementType = "room" if self.type == "Room" else "zone"
+        )["id"] if self.type == "room" else self.getV2Zone()["id"]
+        elementType = "room" if self.type == "room" else "zone"
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"alert": {"action_values": ["breathe"]}, "id": self.id_v2, "id_v1": "/groups/" + self.id_v1, "on":{"on": self.action["on"]}, "type": "grouped_light", }],
                          "id": str(uuid.uuid4()),
@@ -118,10 +115,10 @@ class Group():
                 setattr(self, key, value)
 
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
+                         "data": [self.getV2Room() if self.type == "room" else self.getV2Zone()],
                          "owner": {
-            "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
-            "rtype": "room" if self.type == "Room" else "zone"
+            "rid": self.getV2Room()["id"] if self.type == "room" else self.getV2Zone()["id"],
+            "rtype": "room" if self.type == "room" else "zone"
         },
             "id": str(uuid.uuid4()),
             "type": "update"
@@ -287,7 +284,9 @@ class Group():
         result["id_v1"] = "/groups/" + self.id_v1
         result["on"] = {"on": self.update_state()["any_on"]}
         result["type"] = "grouped_light"
-        result["owner"] = self.owner
+        if hasattr(self, "owner"):
+            result["owner"] = {"rid": self.owner, "rtype": "device"}
+
         return result
 
     def getObjectPath(self):
@@ -295,7 +294,9 @@ class Group():
 
     def save(self):
         result = {"id_v2": self.id_v2, "name": self.name, "class": self.icon_class,
-                  "lights": [], "action": self.action, "type": self.type, "owner": self.owner}
+                  "lights": [], "action": self.action, "type": self.type}
+        if hasattr(self, "owner"):
+            result["owner"] = self.owner
         for light in self.lights:
             if light():
                 result["lights"].append(light().id_v1)

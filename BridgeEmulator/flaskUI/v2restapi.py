@@ -466,7 +466,8 @@ class ClipV2Resource(Resource):
             new_object_id = nextFreeId(bridgeConfig, "groups")
             objCreation = {
                 "id_v1": new_object_id,
-                "name": postDict["metadata"]["name"]
+                "name": postDict["metadata"]["name"],
+                "owner": request.headers["hue-application-key"],
             }
             objCreation["type"] = "room" if resource == "room" else "zone"
             if "archetype" in postDict["metadata"]:
