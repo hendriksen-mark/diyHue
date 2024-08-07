@@ -206,8 +206,8 @@ def v2BridgeDevice():
 
 def v2DiyHueBridge():
     return{
-        "Hue Essentials key": bridgeConfig["Hue Essentials key"], 
-        "Remote API enabled": bridgeConfig["Remote API enabled"]
+        "Hue Essentials key": bridgeConfig["config"]["Hue Essentials key"], 
+        "Remote API enabled": bridgeConfig["config"]["Remote API enabled"]
     }
 
 class AuthV1(Resource):
