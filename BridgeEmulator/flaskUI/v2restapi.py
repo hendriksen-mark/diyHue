@@ -204,6 +204,12 @@ def v2BridgeDevice():
     ]
     return result
 
+def v2DiyHueBridge():
+    return{
+        "Hue Essentials key": bridgeConfig["Hue Essentials key"], 
+        "Remote API enabled": bridgeConfig["Remote API enabled"]
+    }
+
 class AuthV1(Resource):
     def get(self):
         authorisation = authorizeV2(request.headers)
@@ -233,6 +239,7 @@ class ClipV2(Resource):
                 data.append(sensor.getDevice())
         # bridge
         data.append(v2Bridge())
+        data.append(v2DiyHueBridge())
         # zigbee
         data.append(v2BridgeZigBee())
         for key, light in bridgeConfig["lights"].items():
@@ -354,6 +361,8 @@ class ClipV2Resource(Resource):
             response["data"].append(v2BridgeZigBeeDiscovery())
         elif resource == "bridge":
             response["data"].append(v2Bridge())
+        elif resource == "diyhue":
+            response["data"].append(v2DiyHueBridge())
         elif resource == "bridge_home":
             response["data"].append(v2BridgeHome())
         elif resource == "homekit":
