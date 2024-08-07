@@ -96,7 +96,7 @@ class S(BaseHTTPRequestHandler):
                         else:
                             self._set_headers()
                             # send command to hue emulator
-                            bridges[apiKey]["action"] = {"method": "GET", "address": self.path.replace('/bridge','api')}
+                            bridges[apiKey]["action"] = {"method": "GET", "address": self.path.replace('/bridge','/api')}
                             #return the responce from
                             while "response" not in bridges[apiKey]:
                                sleep(0.2)
@@ -113,7 +113,7 @@ class S(BaseHTTPRequestHandler):
                         else:
                             self._set_headers(apiKey)
                             # send command to hue emulator
-                            bridges[apiKey]["action"] = {"method": "GET", "address": self.path.replace('/route', '')}
+                            bridges[apiKey]["action"] = {"method": "GET", "address": self.path.replace('/route', '/')}
                             # return the responce from
                             while "response" not in bridges[apiKey]:
                                 sleep(0.2)
@@ -154,7 +154,7 @@ class S(BaseHTTPRequestHandler):
                     else:
                         apiKey = self.headers['apikey']
                         self._set_headers()
-                        bridges[apiKey]["action"] = {"method": "POST", "address": self.path.replace('/bridge','api'), "body": post_dictionary}
+                        bridges[apiKey]["action"] = {"method": "POST", "address": self.path.replace('/bridge','/api'), "body": post_dictionary}
                         counter = 0
                         while "response" not in bridges[apiKey] and counter < 200:
                             sleep(0.1)
@@ -170,7 +170,7 @@ class S(BaseHTTPRequestHandler):
                     else:
                         apiKey = self.headers['hue-application-key']
                         self._set_headers(apiKey)
-                        bridges[apiKey]["action"] = {"method": "POST", "address": self.path.replace('/route', ''), "body": post_dictionary}
+                        bridges[apiKey]["action"] = {"method": "POST", "address": self.path.replace('/route', '/'), "body": post_dictionary}
                         counter = 0
                         while "response" not in bridges[apiKey] and counter < 200:
                             sleep(0.1)
@@ -210,7 +210,7 @@ class S(BaseHTTPRequestHandler):
                     self._set_headers()
                     self.data_string = self.rfile.read(int(self.headers['Content-Length']))
                     put_dictionary = json.loads(self.data_string.decode('utf8'))
-                    bridges[apiKey]["action"] = {"method": "PUT", "address":self.path.replace('/bridge','api'), "body": put_dictionary}
+                    bridges[apiKey]["action"] = {"method": "PUT", "address":self.path.replace('/bridge','/api'), "body": put_dictionary}
                     counter = 0
                     while "response" not in bridges[apiKey] and counter < 300:
                         sleep(0.05)
@@ -228,7 +228,7 @@ class S(BaseHTTPRequestHandler):
                     self._set_headers(apiKey)
                     self.data_string = self.rfile.read(int(self.headers['Content-Length']))
                     put_dictionary = json.loads(self.data_string.decode('utf8'))
-                    bridges[apiKey]["action"] = {"method": "PUT", "address": self.path.replace('/route', ''), "body": put_dictionary}
+                    bridges[apiKey]["action"] = {"method": "PUT", "address": self.path.replace('/route', '/'), "body": put_dictionary}
                     counter = 0
                     while "response" not in bridges[apiKey] and counter < 300:
                         sleep(0.05)
