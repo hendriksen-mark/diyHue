@@ -20,13 +20,13 @@ def runRemoteApi(BIND_IP, config):
                     if  response.text != '{renew}':
                         data = json.loads(response.text)
                         if data["method"] == 'GET':
-                            bridgeReq = requests.get(f'http://{ip}/' + data['address'], timeout=5)
+                            bridgeReq = requests.get(f'http://{ip}/' + data['address'], timeout=5, headers={"hue-application-key": response.headers["hue-application-key"]})
                             requests.post(url + '?apikey=' + base64.urlsafe_b64encode(bytes(config["Hue Essentials key"], "utf8")).decode("utf-8"), timeout=5, json=json.loads(bridgeReq.text))
                         if data["method"] == 'POST':
-                            bridgeReq = requests.post(f'http://{ip}/' + data['address'], json=data["body"], timeout=5)
+                            bridgeReq = requests.post(f'http://{ip}/' + data['address'], json=data["body"], timeout=5, headers={"hue-application-key": response.headers["hue-application-key"]})
                             requests.post(url + '?apikey=' + base64.urlsafe_b64encode(bytes(config["Hue Essentials key"], "utf8")).decode("utf-8"), timeout=5, json=json.loads(bridgeReq.text))
                         if data["method"] == 'PUT':
-                            bridgeReq = requests.put(f'http://{ip}/' + data['address'], json=data["body"], timeout=5)
+                            bridgeReq = requests.put(f'http://{ip}/' + data['address'], json=data["body"], timeout=5, headers={"hue-application-key": response.headers["hue-application-key"]})
                             requests.post(url + '?apikey=' + base64.urlsafe_b64encode(bytes(config["Hue Essentials key"], "utf8")).decode("utf-8"), timeout=5, json=json.loads(bridgeReq.text))
 
                 else:
