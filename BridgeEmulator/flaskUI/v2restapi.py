@@ -181,6 +181,14 @@ def geoLocation():
         "type": "geolocation"
     }
 
+def matter():
+    return {
+        "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'matter')),
+        "has_qr_code": False,
+        "max_fabrics": 16,
+        "type": "matter"
+    }
+
 
 def v2BridgeDevice():
     config = bridgeConfig["config"]
@@ -188,6 +196,7 @@ def v2BridgeDevice():
     result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
     result["id_v1"] = ""
     result["metadata"] = {"archetype": "bridge_v2", "name": config["name"]}
+    result["identify"] = {}
     result["product_data"] = {
         "certified": True,
         "manufacturer_name": "DiyHue",
@@ -280,6 +289,8 @@ class ClipV2(Resource):
         # bridge home
         data.append(v2BridgeHome())
         data.append(v2GeofenceClient())
+        data.append(geoLocation())
+        data.append(matter())
         for script in behaviorScripts():
             data.append(script)
         for key, sensor in bridgeConfig["sensors"].items():
@@ -369,6 +380,8 @@ class ClipV2Resource(Resource):
             response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
+        elif resource == "matter":
+            response["data"].append(matter())
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())
