@@ -12,7 +12,7 @@ def staticConfig():
             "errorcode": 0,
             "status": "idle"
         },
-        "datastoreversion": "126",
+        "datastoreversion": "168",
         "dhcp": True,
         "factorynew": False,
         "internetservices": {
