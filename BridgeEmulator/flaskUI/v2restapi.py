@@ -174,8 +174,8 @@ def geoLocation():
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'geolocation')),
         "is_configured": bridgeConfig["sensors"]["1"].config["configured"],
         "sun_today": {
-            "sunset_time": bridgeConfig["sensors"]["1"].config["sunset"] if bridgeConfig["sensors"]["1"].config["configured"] else "",
-            "day_type": "normal_day" if bridgeConfig["sensors"]["1"].config["configured"] else ""
+            "sunset_time": bridgeConfig["sensors"]["1"].config["sunset"] if bridgeConfig["sensors"]["1"].config["configured"] else "21:30:00",
+            "day_type": "normal_day"
         },
         "type": "geolocation"
     }
