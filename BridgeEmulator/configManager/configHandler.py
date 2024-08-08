@@ -149,7 +149,7 @@ class Config:
                     #self.yaml_config["groups"]["0"].add_light(self.yaml_config["lights"][light])
             #groups
             #create group 0
-            self.yaml_config["groups"]["0"] = Group.Group({"name":"Group 0","id_v1": "0", "owner": list(self.yaml_config["apiUsers"])[0], "type":"LightGroup","state":{"all_on":False,"any_on":True},"recycle":False,"action":{"on":False,"bri":165,"hue":8418,"sat":140,"effect":"none","xy":[0.6635,0.2825],"ct":366,"alert":"select","colormode":"hs"}})
+            self.yaml_config["groups"]["0"] = Group.Group({"name":"Group 0","id_v1": "0", "type":"LightGroup","state":{"all_on":False,"any_on":True},"recycle":False,"action":{"on":False,"bri":165,"hue":8418,"sat":140,"effect":"none","xy":[0.6635,0.2825],"ct":366,"alert":"select","colormode":"hs"}})
             for key, light in self.yaml_config["lights"].items():
                 self.yaml_config["groups"]["0"].add_light(light)
             # create groups
