@@ -248,7 +248,7 @@ class ClipV2(Resource):
                 data.append(sensor.getDevice())
         # bridge
         data.append(v2Bridge())
-        #data.append(v2DiyHueBridge())
+        data.append(v2DiyHueBridge())
         # zigbee
         data.append(v2BridgeZigBee())
         for key, light in bridgeConfig["lights"].items():
