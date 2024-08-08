@@ -164,7 +164,6 @@ def v2Bridge():
         "bridge_id": bridge_id.lower(),
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')),
         "id_v1": "",
-        "identify": {},
         "owner": {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "rtype": "device"},
         "time_zone": {"time_zone": bridgeConfig["config"]["timezone"]},
         "type": "bridge"
@@ -195,6 +194,7 @@ def v2BridgeDevice():
     bridge_id = config["bridgeid"]
     result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
     result["id_v1"] = ""
+    result["identify"] = {},
     result["metadata"] = {"archetype": "bridge_v2", "name": config["name"]}
     result["identify"] = {}
     result["product_data"] = {
