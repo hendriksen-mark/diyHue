@@ -199,10 +199,10 @@ def v2BridgeDevice():
     result["identify"] = {}
     result["product_data"] = {
         "certified": True,
-        "manufacturer_name": "DiyHue",
+        "manufacturer_name": "Signify Netherlands B.V.",
         "model_id": "BSB002",
         "product_archetype": "bridge_v2",
-        "product_name": "DiyHue Emulator",
+        "product_name": "Philips hue",
         "software_version": config["apiversion"][:5] + config["swversion"]
     }
     result["services"] = [
