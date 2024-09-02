@@ -28,6 +28,7 @@ class Light():
         self.dynamics = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect = "no_effect"
         self.function = data["function"] if "function" in data else "mixed"
+        self.controlled_service = data["controlled_service"] if "controlled_service" in data else "manual"
 
         # entertainment
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -200,6 +201,9 @@ class Light():
                 v1State["name"] = state["metadata"]["name"]
             if "function" in state["metadata"]:
                 v1State["function"] = state["metadata"]["function"]
+        if "controlled_service" in state:
+            self.controlled_service = state["controlled_service"]
+            del state["controlled_service"]
         self.setV1State(v1State, advertise=False)
         self.genStreamEvent(state)
 

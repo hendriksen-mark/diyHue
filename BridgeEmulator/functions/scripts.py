@@ -88,16 +88,20 @@ def triggerScript(behavior_instance):
 def behaviorScripts():
     return [{
       "configuration_schema": {
-        "$ref": "basic_goto_sleep_config.json#"
+        "$ref": "goto_sleep_config.json#"
       },
       "description": "Get ready for nice sleep.",
       "id": "7e571ac6-f363-42e1-809a-4cbf6523ed72",
       "metadata": {
         "category": "automation",
-        "name": "Basic go to sleep routine"
+        "name": "Go to sleep routines",
       },
-      "state_schema": {},
-      "supported_features": [],
+      "state_schema": {
+        "$ref": "goto_sleep_state.json#"
+      },
+      "supported_features": [
+        "style_sunset_gts"
+      ],
       "trigger_schema": {
         "$ref": "trigger.json#"
       },
@@ -116,7 +120,8 @@ def behaviorScripts():
       },
       "state_schema": {},
       "supported_features": [
-        "style_sunrise"
+        "style_sunrise",
+        "intensity"
       ],
       "trigger_schema": {
         "$ref": "trigger.json#"
@@ -233,4 +238,97 @@ def behaviorScripts():
       },
       "type": "behavior_script",
       "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "config.json#"
+      },
+      "description": "Contact Sensor script",
+      "id": "049008e6-62d7-42ba-b473-d8488cfde600",
+      "metadata": {
+        "category": "accessory",
+        "name": "Contact Sensor"
+      },
+      "state_schema": {
+        "$ref": "state.json#"
+      },
+      "supported_features": [],
+      "trigger_schema": {},
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "config.json#"
+      },
+      "description": "Generic switches script",
+      "id": "67d9395b-4403-42cc-b5f0-740b699d67c6",
+      "metadata": {
+        "category": "accessory",
+        "name": "Hue Switches"
+      },
+      "state_schema": {
+        "$ref": "state.json#"
+      },
+      "supported_features": [],
+      "trigger_schema": {},
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "motion_sensor_config.json#"
+      },
+      "description": "Motion sensor script",
+      "id": "bba79770-19f1-11ec-9621-0242ac130002",
+      "metadata": {
+        "category": "accessory",
+        "name": "Motion Sensor"
+      },
+      "state_schema": {
+        "$ref": "motion_sensor_state.json#"
+      },
+      "supported_features": [],
+      "trigger_schema": {},
+      "type": "behavior_script",
+      "version": "0.0.1"
+    },
+    {
+      "configuration_schema": {
+        "$ref": "pm_config.json#"
+      },
+      "description": "PM Automation",
+      "id": "db06cabc-c752-4904-9e8f-4ebe98feaa1a",
+      "metadata": {
+        "category": "automation",
+        "name": "PM"
+      },
+      "state_schema": {
+        "$ref": "pm_state.json#"
+      },
+      "supported_features": [],
+      "trigger_schema": {
+        "$ref": "pm_trigger.json#"
+      },
+      "type": "behavior_script",
+      "version": "0.0.1",
+      "max_number_instances": 1
+    },
+    {
+      "configuration_schema": {
+        "$ref": "config.json#"
+      },
+      "description": "Tap Switch script",
+      "id": "f306f634-acdb-4dd6-bdf5-48dd626d667e",
+      "metadata": {
+        "category": "accessory",
+        "name": "Tap Switch",
+      },
+      "state_schema": {
+        "$ref": "state.json#"
+      },
+      "supported_features": [],
+      "trigger_schema": {},
+      "type": "behavior_script",
+      "version": "0.0.1",
     }]

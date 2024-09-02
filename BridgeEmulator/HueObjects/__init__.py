@@ -38,6 +38,8 @@ def v2StateToV1(v2State):
         v1State["gradient"] = v2State["gradient"]
     if "transitiontime" in v2State:  # to be replaced once api will be public
         v1State["transitiontime"] = v2State["transitiontime"]
+    if "controlled_service" in v2State:
+            v1State["controlled_service"] = v2State["controlled_service"]
     return v1State
 
 def genV2Uuid():
@@ -53,6 +55,7 @@ def setGroupAction(group, state, scene=None):
     if scene != None:
         sceneStates = list(scene.lightstates.items())
         for light, state in sceneStates:
+            state["controlled_service"] = "scene"
             lightsState[light.id_v1] = state
             if "on" in state and state["on"] == True:
                 group.state["any_on"] = True
@@ -80,6 +83,8 @@ def setGroupAction(group, state, scene=None):
             for key, value in lightsState[light().id_v1].items():
                 if key in light().state:
                     light().state[key] = value
+                if key == "controlled_service":
+                    light().controlled_service = value
             light().updateLightState(lightsState[light().id_v1])
             # apply max and min brightness limis
             if "bri" in lightsState[light().id_v1]:

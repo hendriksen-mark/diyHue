@@ -31,6 +31,11 @@ class BehaviorInstance():
         StreamEvent(streamMessage)
         logging.info(self.name + " behaviour instance was destroyed.")
 
+    def activate(self, data):
+        if "recall" in data:
+            if data["recall"]["action"] == "deactive":
+                self.active = False
+
     def getV2Api(self):
         result = {"configuration": self.configuration,
                   "dependees": [],

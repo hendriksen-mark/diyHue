@@ -62,6 +62,11 @@ class Scene():
                 for light in self.lights:
                     if light():
                         light().dynamics["speed"] = self.speed
+                        if "controlled_service" in data:
+                            light().controlled_service = data["controlled_service"]
+                        else:
+                            light().controlled_service = {"rid": self.id_v2,
+                                                        "rtype": "scene"}
                         Thread(target=light().dynamicScenePlay, args=[
                             self.palette, lightIndex]).start()
                         lightIndex += 1
@@ -90,6 +95,11 @@ class Scene():
                 if "recall" in data and "duration" in data["recall"]:
                     state["transitiontime"] = int(
                         data["recall"]["duration"] / 100)
+                if "controlled_service" in data:
+                    light.controlled_service = data["controlled_service"]
+                else:
+                    light.controlled_service = {"rid": self.id_v2,
+                                                "rtype": "scene"}
 
             if light.protocol in ["native_multi", "mqtt"]:
                 if light.protocol_cfg["ip"] not in queueState:

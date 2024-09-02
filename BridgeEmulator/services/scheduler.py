@@ -146,7 +146,7 @@ def runScheduler():
                                 group.setV1Action(state={"on": False})
                             else:
                                 logging.info("execute smart_scene: " + obj.name + " scene: " + str(obj.active_timeslot))
-                                putDict = {"recall": {"action": "active", "duration": obj.speed}}
+                                putDict = {"recall": {"action": "active", "duration": obj.speed}, "controlled_service": "smart_scene"}
                                 target_object = getObject(obj.timeslots[active_timeslot]["target"]["rtype"], obj.timeslots[active_timeslot]["target"]["rid"])
                                 target_object.activate(putDict)
 

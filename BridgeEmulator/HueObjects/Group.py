@@ -147,6 +147,8 @@ class Group():
 
     def setV2Action(self, state):
         v1State = v2StateToV1(state)
+        if "controlled_service" in state:
+            del state["controlled_service"]
         setGroupAction(self, v1State)
         self.genStreamEvent(state)
 
@@ -292,7 +294,10 @@ class Group():
         result["on"] = {"on": self.update_state()["any_on"]}
         result["type"] = "grouped_light"
         if hasattr(self, "owner"):
-            result["owner"] = {"rid": self.owner.username, "rtype": "device"}
+            apiuser = self.owner.username
+            if len(self.owner.username) == 32:
+                apiuser = apiuser[:8] + '-' + apiuser[8:12] + '-' + apiuser[12:16] + '-' + apiuser[16:20]+ '-' + apiuser[20:]
+            result["owner"] = {"rid": apiuser, "rtype": "device"}
         else:
             result["owner"] = {"rid": self.id_v2, "rtype": "device"}
         result["signaling"] = {"signal_values": [

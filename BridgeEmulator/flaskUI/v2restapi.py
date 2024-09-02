@@ -609,6 +609,7 @@ class ClipV2ResourceId(Resource):
         logging.info(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
+            putDict["controlled_service"] = "manual"
             object.setV2State(putDict)
         elif resource == "entertainment_configuration":
             if "action" in putDict:
@@ -648,6 +649,7 @@ class ClipV2ResourceId(Resource):
             if "metadata" in putDict:
                 object.name = putDict["metadata"]["name"]
         elif resource == "grouped_light":
+            putDict["controlled_service"] = "manual"
             object.setV2Action(putDict)
         elif resource == "geolocation":
             bridgeConfig["sensors"]["1"].protocol_cfg = {
