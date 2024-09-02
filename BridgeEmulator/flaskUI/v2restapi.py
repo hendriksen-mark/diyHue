@@ -379,8 +379,6 @@ class ClipV2Resource(Resource):
             response["data"].append(v2HomeKit())
         elif resource == "geolocation":
             response["data"].append(geoLocation())
-        elif resource == "matter":
-            response["data"].append(matter())
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
                 response["data"].append(instance.getV2Api())
