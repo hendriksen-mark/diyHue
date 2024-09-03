@@ -5,7 +5,7 @@ opkg update
 wait
 
 echo -e "\033[32m Installing dependencies.\033[0m"
-opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl unzip coap-client kmod-bluetooth bluez-daemon ca-certificates libustream-wolfssl libcurl
+opkg install ca-bundle git git-http nano nmap python3 python3-pip python3-setuptools openssl-util curl unzip coap-client kmod-bluetooth bluez-daemon ca-certificates libustream-wolfssl libcurl coreutils-stat
 wait
 
 echo -e "\033[32m Creating directories.\033[0m"
@@ -67,7 +67,6 @@ cat public.crt >> /opt/hue-emulator/config/cert.pem
 rm private.key public.crt
 
 echo -e "\033[32m Changing permissions.\033[0m"
-chmod +x /etc/init.d/hueemulatorWrt-service
 chmod +x /opt/hue-emulator/HueEmulator3.py
 chmod +x /opt/hue-emulator/HueObjects
 chmod +x /opt/hue-emulator/configManager
@@ -82,6 +81,7 @@ chmod +x /opt/hue-emulator/functions/network.py
 echo -e "\033[32m Copy startup service.\033[0m"
 cd /opt/tmp/diyHue/BridgeEmulator
 cp hueemulatorWrt-service /etc/init.d/
+chmod +x /etc/init.d/hueemulatorWrt-service
 
 echo -e "\033[32m Enable startup service.\033[0m"
 /etc/init.d/hueemulatorWrt-service enable
