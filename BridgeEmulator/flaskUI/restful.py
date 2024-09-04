@@ -91,8 +91,10 @@ class NewUser(Resource):
                 configManager.bridgeConfig.save_config()
                 return response
             else:
+                logging.error("link button not pressed")
                 return [{"error": {"type": 101, "address": "/api/", "description": "link button not pressed"}}]
         else:
+            logging.error("parameter, " + list(postDict.keys())[0] + ", not available")
             return [{"error": {"type": 6, "address": "/api/" + list(postDict.keys())[0], "description":"parameter, " + list(postDict.keys())[0] + ", not available"}}]
 
 
