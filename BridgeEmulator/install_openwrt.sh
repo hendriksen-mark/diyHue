@@ -22,7 +22,6 @@ curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.
 wait
 unzip -qo diyhue.zip
 wait
-rm diyhue.zip
 cp -r diyHue-master/BridgeEmulator/flaskUI /opt/hue-emulator/
 cp -r diyHue-master/BridgeEmulator/functions /opt/hue-emulator/
 cp -r diyHue-master/BridgeEmulator/lights /opt/hue-emulator/
@@ -39,15 +38,15 @@ mv diyHue-master/BridgeEmulator/functions/network_OpenWrt.py /opt/hue-emulator/f
 cp diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
 python3 -m pip install -r diyHue-master/requirements.txt
 wait
-rm -r diyHue-master
 
 echo -e "\033[32m Copy web interface files.\033[0m"
+mkdir diyhueUI
 curl -sL https://www.github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
 wait
-unzip -qo diyHueUI.zip
+unzip -qo diyHueUI.zip -d diyhueUI
 wait
-mv index.html /opt/hue-emulator/flaskUI/templates/
-cp -r static /opt/hue-emulator/flaskUI/
+mv diyhueUI/index.html /opt/hue-emulator/flaskUI/templates/
+cp -r diyhueUI/static /opt/hue-emulator/flaskUI/
 
 echo -e "\033[32m Creating certificate.\033[0m"
 cd /opt/hue-emulator
