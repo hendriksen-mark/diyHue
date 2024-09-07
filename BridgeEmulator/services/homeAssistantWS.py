@@ -302,10 +302,10 @@ def discover(detectedLights):
             model_id = "LTW001"
         elif BRIGHTNESS in supported_colourmodes:
             model_id = "LWB010"
-        elif ONOFF in supported_colourmodes:
+        elif ONOFF in supported_colourmodes and not BRIGHTNESS in supported_colourmodes:
             model_id = "LOM001"
         else:
-            logging.debug("unknown model id" + str(supported_colourmodes))
+            logging.debug("unknown model id " + str(supported_colourmodes))
             continue
 
         protocol_cfg = {"entity_id": entity_id,
