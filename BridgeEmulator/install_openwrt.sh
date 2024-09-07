@@ -16,7 +16,7 @@ echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 
-
+cd /opt/tmp
 #curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
 curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
 wait
@@ -37,6 +37,8 @@ cp -r diyHue-master/BridgeEmulator/openssl.conf /opt/hue-emulator/
 rm -Rf /opt/hue-emulator/BridgeEmulator/functions/network.py
 mv diyHue-master/BridgeEmulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 cp diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
+python3 -m pip install -r diyHue-master/requirements.txt
+wait
 rm -r diyHue-master
 
 echo -e "\033[32m Copy web interface files.\033[0m"
@@ -46,10 +48,6 @@ unzip -qo diyHueUI.zip
 wait
 mv index.html /opt/hue-emulator/flaskUI/templates/
 cp -r static /opt/hue-emulator/flaskUI/
-
-echo -e "\033[32m Installing pip dependencies.\033[0m"
-python3 -m pip install -r /opt/tmp/diyHue/requirements.txt
-wait
 
 echo -e "\033[32m Creating certificate.\033[0m"
 cd /opt/hue-emulator
