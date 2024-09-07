@@ -147,8 +147,7 @@ class ResourceElements(Resource):
             return authorisation
 
         if resource in ["lights", "sensors"] and request.get_data(as_text=True) == "":
-            print("scan for light")
-            # if was a request to scan for lights of sensors
+            # if was a request to scan for lights or sensors
             Thread(target=scanForLights).start()
             return [{"success": {"/" + resource: "Searching for new devices"}}]
         postDict = request.get_json(force=True)
