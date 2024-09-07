@@ -297,7 +297,7 @@ class Group():
         if hasattr(self, "owner"):
             apiuser = self.owner.username
             if len(self.owner.username) == 32:
-                apiuser = apiuser[:8] + '-' + apiuser[:8:4] + '-' + apiuser[:12:4] + '-' + apiuser[:16:4]+ '-' + apiuser[20:]
+                apiuser = apiuser[:8] + '-' + apiuser[8:12] + '-' + apiuser[12:16] + '-' + apiuser[16:20]+ '-' + apiuser[20:]
             result["owner"] = {"rid": apiuser, "rtype": "device"}
         else:
             result["owner"] = {"rid": self.id_v2, "rtype": "device"}
