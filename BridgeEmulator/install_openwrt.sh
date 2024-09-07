@@ -16,24 +16,28 @@ echo -e "\033[32m Updating python3-pip.\033[0m"
 python3 -m pip install --upgrade pip
 wait
 
-echo -e "\033[32m Downloading diyHue.\033[0m"
-cd /opt/tmp
-git clone https://www.github.com/diyhue/diyHue.git
-wait
 
-echo -e "\033[32m Copying files to directories.\033[0m"
-cd /opt/tmp/diyHue/BridgeEmulator
-cp -r flaskUI /opt/hue-emulator/
-cp -r functions /opt/hue-emulator/
-cp -r lights /opt/hue-emulator/
-cp -r sensors /opt/hue-emulator/
-cp -r HueObjects /opt/hue-emulator/
-cp -r services /opt/hue-emulator/
-cp -r configManager /opt/hue-emulator/
-cp -r logManager /opt/hue-emulator/
-cp -r HueEmulator3.py /opt/hue-emulator/
-cp -r githubInstall.sh /opt/hue-emulator/
-cp -r openssl.conf /opt/hue-emulator/
+#curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
+curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
+wait
+unzip -qo diyhue.zip
+wait
+rm diyhue.zip
+cp -r diyHue-master/BridgeEmulator/flaskUI /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/functions /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/lights /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/sensors /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/HueObjects /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/services /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/configManager /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/logManager /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/githubInstall.sh /opt/hue-emulator/
+cp -r diyHue-master/BridgeEmulator/openssl.conf /opt/hue-emulator/
+rm -Rf /opt/hue-emulator/BridgeEmulator/functions/network.py
+mv diyHue-master/BridgeEmulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
+cp diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
+rm -r diyHue-master
 
 echo -e "\033[32m Copy web interface files.\033[0m"
 curl -sL https://www.github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip
@@ -42,10 +46,6 @@ unzip -qo diyHueUI.zip
 wait
 mv index.html /opt/hue-emulator/flaskUI/templates/
 cp -r static /opt/hue-emulator/flaskUI/
-
-echo -e "\033[32m Copying custom network function for openwrt.\033[0m"
-rm -Rf /opt/hue-emulator/BridgeEmulator/functions/network.py
-mv /opt/tmp/diyHue/BridgeEmulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
 
 echo -e "\033[32m Installing pip dependencies.\033[0m"
 python3 -m pip install -r /opt/tmp/diyHue/requirements.txt
@@ -76,10 +76,6 @@ chmod +x /opt/hue-emulator/sensors
 chmod +x /opt/hue-emulator/services
 chmod +x /opt/hue-emulator/functions/network.py
 chmod +x /opt/hue-emulator/config
-
-echo -e "\033[32m Copy startup service.\033[0m"
-cd /opt/tmp/diyHue/BridgeEmulator
-cp hueemulatorWrt-service /etc/init.d/
 chmod +x /etc/init.d/hueemulatorWrt-service
 
 echo -e "\033[32m Enable startup service.\033[0m"
