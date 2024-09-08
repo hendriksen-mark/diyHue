@@ -17,8 +17,8 @@ python3 -m pip install --upgrade pip
 wait
 
 cd /opt/tmp
-#curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
-curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
+curl -sL -o diyhue.zip https://github.com/diyhue/diyhue/archive/master.zip
+#curl -sL -o diyhue.zip https://github.com/hendriksen-mark/diyhue/archive/master.zip
 wait
 unzip -qo diyhue.zip
 wait
