@@ -35,7 +35,7 @@ cp -r diyHue-master/BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 cp -r diyHue-master/BridgeEmulator/openssl.conf /opt/hue-emulator/
 rm -Rf /opt/hue-emulator/BridgeEmulator/functions/network.py
 mv diyHue-master/BridgeEmulator/functions/network_OpenWrt.py /opt/hue-emulator/functions/network.py
-cp diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
+cp -r diyHue-master/BridgeEmulator/hueemulatorWrt-service /etc/init.d/
 python3 -m pip install -r diyHue-master/requirements.txt
 wait
 
