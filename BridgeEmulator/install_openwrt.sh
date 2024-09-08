@@ -84,11 +84,9 @@ cd /opt/hue-emulator
 rm -Rf /opt/tmp
 wait
 
-echo -e "\033[32m Installation completed. run: nano /etc/config/uhttpd and mod htpp port 80 for 82, run: nano /etc/lighttpd/lighttpd.conf and mod server.port = 80 for 82. For save changes ctrl +x, y, and enter..\033[0m"
+echo -e "\033[32m Installation completed. run: nano /etc/config/uhttpd and mod htpp port 80 for 82. For save changes ctrl +x, y, and enter..\033[0m"
 sleep 15s
 nano /etc/config/uhttpd
-wait
-nano /etc/lighttpd/lighttpd.conf
 
 echo -e "\033[32m Installation completed.\033[0m"
 wait
