@@ -239,10 +239,7 @@ class Sensor():
                 "name": self.name
             }
             result["services"] = [{
-                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button3')),
-                "rtype": "button"
-                }, {
-                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'button4')),
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'relative_rotary')),
                 "rtype": "button"
                 }, {
                 "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
