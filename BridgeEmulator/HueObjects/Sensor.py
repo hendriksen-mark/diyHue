@@ -252,6 +252,32 @@ class Sensor():
                 "rtype": "zigbee_connectivity"
                 }]
             result["type"] = "device"
+        elif self.modelid == "SOC001":
+            result = {"id": self.id_v2, "id_v1": "/sensors/" + self.id_v1, "type": "device"}
+            result["identify"] = {}
+            result["product_data"] = {"model_id": self.modelid,
+                "manufacturer_name": "Signify Netherlands B.V.",
+                "product_name": "Hue secure contact sensor",
+                "product_archetype": "unknown_archetype",
+                "certified": True,
+                "software_version": "2.67.9",
+                "hardware_platform_type": "100b-125"
+            }
+            result["metadata"] = {
+                "archetype": "unknown_archetype",
+                "name": self.name
+            }
+            result["services"] = [{
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'contact')),
+                "rtype": "contact"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
+                "rtype": "device_power"
+                }, {
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
+                "rtype": "zigbee_connectivity"
+                }]
+            result["type"] = "device"
         return result
 
     def getMotion(self):
@@ -353,10 +379,19 @@ class Sensor():
                   "control_id": button + 1
                 },
                 "button": {
+                        "last_event": "short_release",
                         "button_report": {
                             "updated": self.state["lastupdated"],
                             "event": "initial_press"
-                        }
+                        },
+                        "repeat_interval": 800,
+                        "event_values": [
+                            "initial_press",
+                            "repeat",
+                            "short_release",
+                            "long_release",
+                            "long_press"
+                        ]
                     },
                 "type": "button"
               })
@@ -403,6 +438,25 @@ class Sensor():
                 result["power_state"].update({"battery_level": self.config["battery"],
                     "battery_state": "normal"
                     })
+        return result
+
+    def getContact(self):
+        result = None
+        if self.modelid == "SOC001":
+            result = {
+                "id": str(uuid.uuid5(
+                    uuid.NAMESPACE_URL, self.id_v2 + 'contact')),
+                "id_v1": "/sensors/" + self.id_v1,
+                "owner": {
+                    "rid": self.id_v2,
+                    "rtype": "device"
+                },
+                "contact_report": {
+                    "changed": "2023-11-08T20:32:24.507Z",
+                    "state": "contact"
+                },
+                "type": "contact"
+            }
         return result
 
     def update_attr(self, newdata):
