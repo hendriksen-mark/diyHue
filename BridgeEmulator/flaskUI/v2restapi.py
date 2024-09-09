@@ -50,6 +50,10 @@ def getObject(element, v2uuid):
                     logging.debug("Cache Miss " + element)
                     v2Resources[element][v2uuid] = weakref.ref(obj)
                     return obj
+                elif obj.id_v2 == v2uuid:
+                    logging.debug("Cache Miss " + element)
+                    v2Resources[element][v2uuid] = weakref.ref(obj)
+                    return obj
     logging.info("element not found!")
     return False
 
