@@ -188,7 +188,7 @@ class Group():
                          }
         group_streamMessage["data"][0].update(v2State)
         StreamEvent(group_streamMessage)
-        streamMessage = light_streamMessage,group_streamMessage
+        streamMessage = str(light_streamMessage) + "," + str(group_streamMessage)
         StreamEvent(streamMessage)
 
     def getV1Api(self):
