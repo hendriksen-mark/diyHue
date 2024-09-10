@@ -119,7 +119,6 @@ class Light():
                          "type": "update"
                          }
         StreamEvent(streamMessage)
-        sleep(1)
         self.genStreamEvent(self.getDevice())
 
     def getV1Api(self):
@@ -247,6 +246,7 @@ class Light():
             }
         ]
         result["type"] = "device"
+        logging.debug(result)
         return result
 
     def getZigBee(self):
