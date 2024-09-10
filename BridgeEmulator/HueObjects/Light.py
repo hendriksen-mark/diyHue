@@ -118,6 +118,7 @@ class Light():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
+        logging.debug(streamMessage)
         StreamEvent(streamMessage)
         self.genStreamEvent(self.getDevice())
 
@@ -246,7 +247,6 @@ class Light():
             }
         ]
         result["type"] = "device"
-        logging.debug(result)
         return result
 
     def getZigBee(self):
