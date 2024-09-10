@@ -156,6 +156,7 @@ class Group():
 
     def genStreamEvent(self, v2State):
         light_streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                               "data": [{"type": "light"}],
                                  "id": str(uuid.uuid4()),
                                  "type": "update"
                                  }
