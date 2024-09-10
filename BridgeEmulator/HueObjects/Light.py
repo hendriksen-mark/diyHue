@@ -210,14 +210,13 @@ class Light():
 
     def genStreamEvent(self, v2State):
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "data": [{"id": self.id_v2, "type": "light"}],
+                         "data": [{"id": self.id_v2,"id_v1": "/lights/" + self.id_v1, "type": "light"}],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        streamMessage["id_v1"] = "/lights/" + self.id_v1
         streamMessage["data"][0].update(v2State)
-        streamMessage["data"][0].update(
-            {"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
+        streamMessage["data"][0].update({"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
+        streamMessage["data"][0].update({"service_id": self.protocol_cfg["light_nr"] if "light_nr" in self.protocol_cfg else 0})
         StreamEvent(streamMessage)
 
     def getDevice(self):
@@ -327,18 +326,19 @@ class Light():
             result["dimming_delta"] = {}
         result["dynamics"] = self.dynamics
         result["effects"] = {
-        "effect_values": [
-            "no_effect",
-            "candle",
-            "fire"
-        ],
-        "status": "no_effect",
-        "status_values": [
-            "no_effect",
-            "candle",
-            "fire"
-        ]
-    }
+            "effect_values": [
+                "no_effect",
+                "candle",
+                "fire"
+            ],
+            "status": "no_effect",
+            "status_values": [
+                "no_effect",
+                "candle",
+                "fire"
+            ]
+        }
+        result["timed_effects"] = {}
         result["identify"] = {}
         result["id"] = self.id_v2
         result["id_v1"] = "/lights/" + self.id_v1
