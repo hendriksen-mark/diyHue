@@ -155,14 +155,14 @@ class Group():
         self.genStreamEvent(v2State)
 
     def genStreamEvent(self, v2State):
-        light_streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                                "data": [],
                                  "id": str(uuid.uuid4()),
                                  "type": "update"
                                  }
         for num, light in enumerate(self.lights):
             if light():
-                light_streamMessage["data"].insert(num,{
+                streamMessage["data"].insert(num,{
                     "id": light().id_v2,
                     "id_v1": "/lights/" + light().id_v1,
                     "owner": {
@@ -172,11 +172,12 @@ class Group():
                     "service_id": light().protocol_cfg["light_nr"]-1 if "light_nr" in light().protocol_cfg else 0,
                     "type": "light"
                 })
-                light_streamMessage["data"][num].update(v2State)
-        StreamEvent(light_streamMessage)
+                streamMessage["data"][num].update(v2State)
+        StreamEvent(streamMessage)
+
         if "on" in v2State:
             v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
-        group_streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2,"id_v1": "/groups/" + self.id_v1, "type": "grouped_light",
                                    "owner": {
                                        "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
@@ -186,9 +187,7 @@ class Group():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        group_streamMessage["data"][0].update(v2State)
-        StreamEvent(group_streamMessage)
-        streamMessage = str(light_streamMessage) + "," + str(group_streamMessage)
+        streamMessage["data"][0].update(v2State)
         StreamEvent(streamMessage)
 
     def getV1Api(self):
