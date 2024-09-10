@@ -113,12 +113,13 @@ class Light():
                 setattr(self, key, updateAttribute)
             else:
                 setattr(self, key, value)
-        streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getDevice()],
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
         StreamEvent(streamMessage)
+        sleep(1)
         self.genStreamEvent(self.getDevice())
 
     def getV1Api(self):
@@ -216,7 +217,7 @@ class Light():
                          }
         streamMessage["data"][0].update(v2State)
         streamMessage["data"][0].update({"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
-        streamMessage["data"][0].update({"service_id": self.protocol_cfg["light_nr"] if "light_nr" in self.protocol_cfg else 0})
+        streamMessage["data"][0].update({"service_id": self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0})
         StreamEvent(streamMessage)
 
     def getDevice(self):
@@ -230,7 +231,7 @@ class Light():
         }
         result["product_data"] = lightTypes[self.modelid]["device"]
         result["product_data"]["model_id"] = self.modelid
-        result["service_id"] = self.protocol_cfg["light_nr"] if "light_nr" in self.protocol_cfg else 0
+        result["service_id"] = self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0
         result["services"] = [
             {
                 "rid": self.id_v2,
@@ -359,7 +360,7 @@ class Light():
             "no_signal",
             "on_off"]}
         result["powerup"] = {"preset": "last_on_state"}
-        result["service_id"] = self.protocol_cfg["light_nr"] if "light_nr" in self.protocol_cfg else 0
+        result["service_id"] = self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0
         result["type"] = "light"
         return result
 
