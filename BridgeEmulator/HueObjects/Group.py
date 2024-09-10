@@ -168,7 +168,7 @@ class Group():
                         "rid": light().getDevice()["id"],
                         "rtype":"device"
                     },
-                    "service_id": light().protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0,
+                    "service_id": light().protocol_cfg["light_nr"]-1 if "light_nr" in light().protocol_cfg else 0,
                     "type": "light"
                 }
                 light_streamMessage["data"][num].update(v2State)
