@@ -119,6 +119,7 @@ class Light():
                          "type": "update"
                          }
         StreamEvent(streamMessage)
+        self.genStreamEvent(self.getDevice())
 
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
@@ -230,7 +231,7 @@ class Light():
         }
         result["product_data"] = lightTypes[self.modelid]["device"]
         result["product_data"]["model_id"] = self.modelid
-
+        result["service_id"] = self.protocol_cfg["light_nr"] if "light_nr" in self.protocol_cfg else 0
         result["services"] = [
             {
                 "rid": self.id_v2,
@@ -314,7 +315,7 @@ class Light():
             }
             result["color_temperature"]["mirek_valid"] = True if self.state[
                 "ct"] != None and self.state["ct"] < 500 and self.state["ct"] > 153 else False
-            #result["color_temperature_delta"] = {}
+            result["color_temperature_delta"] = {}
         if "bri" in self.state:
             bri_value = self.state["bri"]
             if bri_value is None or bri_value == "null":
@@ -358,6 +359,7 @@ class Light():
             "no_signal",
             "on_off"]}
         result["powerup"] = {"preset": "last_on_state"}
+        result["service_id"] = self.protocol_cfg["light_nr"] if "light_nr" in self.protocol_cfg else 0
         result["type"] = "light"
         return result
 
