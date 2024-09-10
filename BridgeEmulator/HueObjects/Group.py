@@ -146,8 +146,6 @@ class Group():
         v1State = v2StateToV1(state)
         if "controlled_service" in state:
             del state["controlled_service"]
-        if "on" in state:
-            state["dimming"] = {"brightness": self.update_state()["avr_bri"]}
         setGroupAction(self, v1State)
         self.genStreamEvent(state)
 
@@ -167,6 +165,8 @@ class Group():
                 streamMessage["data"][0].update(v2State)
                 streamMessage["data"][0].update({"service_id": light().protocol_cfg["light_nr"]-1 if "light_nr" in light().protocol_cfg else 0})
                 StreamEvent(streamMessage)
+        if "on" in v2State:
+            v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2,"id_v1": "/groups/" + self.id_v1, "type": "grouped_light",
                                    "owner": {
