@@ -176,7 +176,7 @@ class Group():
         StreamEvent(light_streamMessage)
         if "on" in v2State:
             v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
-        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        group_streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [{"id": self.id_v2,"id_v1": "/groups/" + self.id_v1, "type": "grouped_light",
                                    "owner": {
                                        "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
@@ -186,8 +186,9 @@ class Group():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        streamMessage["data"][0].update(v2State)
-        StreamEvent(streamMessage)
+        group_streamMessage["data"][0].update(v2State)
+        StreamEvent(group_streamMessage)
+        StreamEvent(light_streamMessage+group_streamMessage)
 
     def getV1Api(self):
         result = {}
