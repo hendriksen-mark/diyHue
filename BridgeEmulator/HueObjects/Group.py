@@ -117,13 +117,9 @@ class Group():
 
         streamMessage = {"creationtime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                          "data": [self.getV2Room() if self.type == "Room" else self.getV2Zone()],
-                         "owner": {
-            "rid": self.getV2Room()["id"] if self.type == "Room" else self.getV2Zone()["id"],
-            "rtype": "room" if self.type == "Room" else "zone"
-        },
-            "id": str(uuid.uuid4()),
-            "type": "update"
-        }
+                         "id": str(uuid.uuid4()),
+                         "type": "update"
+                         }
         StreamEvent(streamMessage)
 
     def update_state(self):
