@@ -155,16 +155,24 @@ class Group():
         self.genStreamEvent(v2State)
 
     def genStreamEvent(self, v2State):
-        for light in self.lights:
-            if light():
-                streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                 "data": [{"id": light().id_v2, "id_v1": "/lights/" + light().id_v1, "owner": {"rid": light().getDevice()["id"], "rtype":"device"}, "type": "light"}],
+        light_streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                                  "id": str(uuid.uuid4()),
                                  "type": "update"
                                  }
-                streamMessage["data"][0].update(v2State)
-                streamMessage["data"][0].update({"service_id": light().protocol_cfg["light_nr"]-1 if "light_nr" in light().protocol_cfg else 0})
-                StreamEvent(streamMessage)
+        for num, light in enumerate(self.lights):
+            if light():
+                light_streamMessage["data"][num] = {
+                    "id": light().id_v2,
+                    "id_v1": "/lights/" + light().id_v1,
+                    "owner": {
+                        "rid": light().getDevice()["id"],
+                        "rtype":"device"
+                    },
+                    "service_id": light().protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0,
+                    "type": "light"
+                }
+                light_streamMessage["data"][num].update(v2State)
+        StreamEvent(light_streamMessage)
         if "on" in v2State:
             v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
         streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
