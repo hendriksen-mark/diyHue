@@ -118,9 +118,7 @@ class Light():
                          "id": str(uuid.uuid4()),
                          "type": "update"
                          }
-        logging.debug(streamMessage)
         StreamEvent(streamMessage)
-        self.genStreamEvent(self.getDevice())
 
     def getV1Api(self):
         result = lightTypes[self.modelid]["v1_static"]
@@ -218,6 +216,12 @@ class Light():
         streamMessage["data"][0].update(v2State)
         streamMessage["data"][0].update({"owner": {"rid": self.getDevice()["id"], "rtype": "device"}})
         streamMessage["data"][0].update({"service_id": self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0})
+        StreamEvent(streamMessage)
+        streamMessage = {"creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "data": [self.getDevice()],
+                         "id": str(uuid.uuid4()),
+                         "type": "update"
+                         }
         StreamEvent(streamMessage)
 
     def getDevice(self):
