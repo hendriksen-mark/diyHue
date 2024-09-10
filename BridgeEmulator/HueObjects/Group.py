@@ -161,7 +161,7 @@ class Group():
                                  }
         for num, light in enumerate(self.lights):
             if light():
-                light_streamMessage["data"][num] = {
+                light_streamMessage["data"][num].update({
                     "id": light().id_v2,
                     "id_v1": "/lights/" + light().id_v1,
                     "owner": {
@@ -170,7 +170,7 @@ class Group():
                     },
                     "service_id": light().protocol_cfg["light_nr"]-1 if "light_nr" in light().protocol_cfg else 0,
                     "type": "light"
-                }
+                })
                 light_streamMessage["data"][num].update(v2State)
         StreamEvent(light_streamMessage)
         if "on" in v2State:
