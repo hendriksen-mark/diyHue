@@ -188,6 +188,10 @@ class Light():
             v2State = v1StateToV2(state)
             logging.debug("advertise v2: " + str(v2State))
             self.genStreamEvent(v2State)
+        else:
+            logging.debug("advertise false v1: " + str(state))
+            v2State = v1StateToV2(state)
+            logging.debug("advertise false v2: " + str(v2State))
 
     def setV2State(self, state):
         v1State = v2StateToV1(state)
