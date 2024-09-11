@@ -99,7 +99,11 @@ def triggerScript(behavior_instance):
                       group = findGroup(element["group"]["rid"])
                       if element["recall"]["rid"] == "732ff1d9-76a7-4630-aad0-c8acc499bb0b": # Bright scene
                           logging.info("Apply Bright scene to group " + group.name)
-                          group.setV1Action({"on": True, "bri": 254, "ct": 247})
+                          group.setV1Action(state={"ct": 247, "bri": 1})
+                          sleep(1)
+                          group.setV1Action(state={"on": True})
+                          group.setV1Action(state={"bri": 254, "transitiontime": behavior_instance.configuration["when_extended"]["start_at"]["transition"]["minutes"] * 60 * 10})
+                          #group.setV1Action({"on": True, "bri": 254, "ct": 247})
                   behavior_instance.active = True if "end_at" in behavior_instance.configuration["when_extended"] else False
 
 
