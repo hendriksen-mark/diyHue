@@ -183,6 +183,7 @@ class Light():
                     self.state["reachable"] = False
                     logging.warning(self.name + " light error, details: %s", e)
         if advertise:
+            logging.debug(state)
             if "lights" in state:
                 for item in state["lights"]:
                     state = state["lights"][item]
