@@ -111,7 +111,8 @@ def runScheduler():
                                     logging.info("execute timmer: " + obj.name)
                                     Thread(target=triggerScript, args=[obj]).start()
                     elif "duration" in obj.configuration:
-                        Thread(target=triggerScript, args=[obj]).start()
+                        if obj.active == False:
+                            Thread(target=triggerScript, args=[obj]).start()
 
 
             except Exception as e:
