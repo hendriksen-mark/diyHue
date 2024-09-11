@@ -184,7 +184,9 @@ class Light():
                     logging.warning(self.name + " light error, details: %s", e)
                 return
         if advertise:
+            logging.debug("advertise v1: " + str(state))
             v2State = v1StateToV2(state)
+            logging.debug("advertise v2: " + str(v2State))
             self.genStreamEvent(v2State)
 
     def setV2State(self, state):
