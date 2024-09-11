@@ -183,12 +183,12 @@ class Light():
                     self.state["reachable"] = False
                     logging.warning(self.name + " light error, details: %s", e)
         if advertise:
-            logging.debug(state)
+            logging.debug(self)
             if "lights" in state:
                 for item in state["lights"]:
-                    state = state["lights"][item]
-            v2State = v1StateToV2(state)
-            self.genStreamEvent(v2State)
+                    light_state = state["lights"][item]
+                    v2State = v1StateToV2(light_state)
+                    self.genStreamEvent(v2State)
 
     def setV2State(self, state):
         v1State = v2StateToV1(state)
