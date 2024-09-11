@@ -149,42 +149,6 @@ def behaviorScripts():
     },
     {
       "configuration_schema": {
-        "$ref": "coming_home_config.json#"
-      },
-      "description": "Automatically turn your lights to choosen light states, when you arrive at home.",
-      "id": "fd60fcd1-4809-4813-b510-4a18856a595c",
-      "metadata": {
-        "category": "automation",
-        "name": "Coming home"
-      },
-      "state_schema": {},
-      "supported_features": [],
-      "trigger_schema": {
-        "$ref": "trigger.json#"
-      },
-      "type": "behavior_script",
-      "version": "0.0.1"
-    },
-    {
-      "configuration_schema": {
-        "$ref": "leaving_home_config.json#"
-      },
-      "description": "Automatically turn off your lights when you leave",
-      "id": "0194752a-2d53-4f92-8209-dfdc52745af3",
-      "metadata": {
-        "category": "automation",
-        "name": "Leaving home"
-      },
-      "state_schema": {},
-      "supported_features": [],
-      "trigger_schema": {
-        "$ref": "trigger.json#"
-      },
-      "type": "behavior_script",
-      "version": "0.0.1"
-    },
-    {
-      "configuration_schema": {
         "$ref": "schedule_config.json#"
       },
       "description": "Schedule turning on and off lights",
