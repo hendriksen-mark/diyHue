@@ -90,7 +90,7 @@ def runScheduler():
                         if "recurrence_days" in  obj.configuration["when_extended"]:
                             if datetime.now().strftime("%A").lower() not in obj.configuration["when_extended"]["recurrence_days"]:
                                 continue
-                        if obj.avtive:
+                        if obj.active:
                             if "end_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["end_at"] and obj.configuration["when_extended"]["end_at"]["time_point"]["type"] == "time":
                                 triggerTime = obj.configuration["when_extended"]["end_at"]["time_point"]["time"]
                                 time_object = time(
