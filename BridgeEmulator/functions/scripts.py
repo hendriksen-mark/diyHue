@@ -91,7 +91,7 @@ def triggerScript(behavior_instance):
                   if scene:
                       logging.info("Activate scene " + scene.name)
                       if "when_extended" in behavior_instance.configuration and "transition" in behavior_instance.configuration["when_extended"]["start_at"]:
-                          putDict = {"recall": {"action": "active"}, "minutes": behavior_instance.configuration["when_extended"]["start_at"]["transition"]}
+                          putDict = {"recall": {"action": "active"}, "minutes": behavior_instance.configuration["when_extended"]["start_at"]["transition"]["minutes"]}
                           scene.activate(putDict)
                       else:
                           scene.activate({})
