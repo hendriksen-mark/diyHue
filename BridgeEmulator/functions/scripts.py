@@ -65,6 +65,7 @@ def triggerScript(behavior_instance):
                 sleep(behavior_instance.configuration["fade_out_duration"]["seconds"])
                 if behavior_instance.configuration["end_state"] ==  "turn_off":
                     group.setV1Action(state={"on": False})
+                behavior_instance.active = False
                 logging.debug("Finish Go to Sleep")
 
     # Activate scene
@@ -102,6 +103,29 @@ def triggerScript(behavior_instance):
                           group.setV1Action(state={"bri": 254, "transitiontime": behavior_instance.configuration["when_extended"]["start_at"]["transition"]["minutes"] * 60 * 10})
                           #group.setV1Action({"on": True, "bri": 254, "ct": 247})
                   behavior_instance.active = True if "end_at" in behavior_instance.configuration["when_extended"] else False
+
+    # Countdown Timer
+    elif behavior_instance.script_id == "e73bc72d-96b1-46f8-aa57-729861f80c78":
+        logging.debug("Start Countdown Timer " + behavior_instance.name)
+        behavior_instance.active = True
+        for element in behavior_instance.configuration["what"]:
+            if "group" in element:
+                scene = findScene(element)
+                group = findGroup(element["group"]["rid"])
+                if scene:
+                    logging.info("Activate scene " + scene.name)
+                    putDict = {"recall": {"action": "active"}}
+                    scene.activate(putDict)
+                else:
+                  if element["recall"]["rid"] == "732ff1d9-76a7-4630-aad0-c8acc499bb0b": # Bright scene
+                      logging.info("Apply Bright scene to group " + group.name)
+                      group.setV1Action(state={"on": True, "bri": 254, "ct": 247})
+                sleep(behavior_instance.configuration["duration"]["seconds"])
+                if behavior_instance.active == True:
+                    group.setV1Action(state={"on": False})
+                behavior_instance.active = False
+                behavior_instance.update_attr({"enabled":False})
+                logging.debug("Finish Countdown Timer " + behavior_instance.name)
 
 
 def behaviorScripts():

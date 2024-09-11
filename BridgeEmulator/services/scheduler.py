@@ -110,6 +110,8 @@ def runScheduler():
                                 if datetime.now().second == time_object.second and datetime.now().minute == time_object.minute and datetime.now().hour == time_object.hour:
                                     logging.info("execute timmer: " + obj.name)
                                     Thread(target=triggerScript, args=[obj]).start()
+                    elif "duration" in obj.configuration:
+                        Thread(target=triggerScript, args=[obj]).start()
 
 
             except Exception as e:
