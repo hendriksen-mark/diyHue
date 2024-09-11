@@ -69,20 +69,38 @@ def triggerScript(behavior_instance):
 
     # Activate scene
     elif behavior_instance.script_id == "7238c707-8693-4f19-9095-ccdc1444d228":
-        logging.debug("Start routine " + behavior_instance.name)
-        for element in behavior_instance.configuration["what"]:
-            if "group" in element:
-                scene = findScene(element)
-                if scene:
-                    if "when_extended" in behavior_instance.configuration and "transition" in behavior_instance.configuration["when_extended"]["start_at"]:
-                        scene.activate(behavior_instance.configuration["when_extended"]["start_at"]["transition"])
-                    else:
-                        scene.activate({})
-                else:
-                    group = findGroup(element["group"]["rid"])
-                    if element["recall"]["rid"] == "732ff1d9-76a7-4630-aad0-c8acc499bb0b": # Bright scene
-                        logging.info("Apply Bright scene to group " + group.name)
-                        group.setV1Action({"on": True, "bri": 254, "ct": 247})
+        if behavior_instance.active and "end_at" in behavior_instance.configuration["when_extended"]:
+            logging.debug("End routine " + behavior_instance.name)
+            for element in behavior_instance.configuration["what"]:
+              if "group" in element:
+                  scene = findScene(element)
+                  if scene:
+                      logging.info("Deactivate scene " + scene.name)
+                      putDict = {"recall": {"action": "deactivate"}}
+                      scene.activate(putDict)
+                  else:
+                      group = findGroup(element["group"]["rid"])
+                      logging.info("Turn off group " + group.name)
+                      group.setV1Action({"on": False})
+                      behavior_instance.active = False
+        else:
+            logging.debug("Start routine " + behavior_instance.name)
+            for element in behavior_instance.configuration["what"]:
+              if "group" in element:
+                  scene = findScene(element)
+                  if scene:
+                      logging.info("Activate scene " + scene.name)
+                      if "when_extended" in behavior_instance.configuration and "transition" in behavior_instance.configuration["when_extended"]["start_at"]:
+                          putDict = {"recall": {"action": "active"}, "minutes": behavior_instance.configuration["when_extended"]["start_at"]["transition"]}
+                          scene.activate(putDict)
+                      else:
+                          scene.activate({})
+                  else:
+                      group = findGroup(element["group"]["rid"])
+                      if element["recall"]["rid"] == "732ff1d9-76a7-4630-aad0-c8acc499bb0b": # Bright scene
+                          logging.info("Apply Bright scene to group " + group.name)
+                          group.setV1Action({"on": True, "bri": 254, "ct": 247})
+                  behavior_instance.active = True if "end_at" in behavior_instance.configuration["when_extended"] else False
 
 
 def behaviorScripts():
