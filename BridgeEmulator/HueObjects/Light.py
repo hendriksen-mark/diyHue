@@ -182,7 +182,6 @@ class Light():
                 except Exception as e:
                     self.state["reachable"] = False
                     logging.warning(self.name + " light error, details: %s", e)
-                return
         if advertise:
             logging.debug("advertise v1: " + str(state))
             v2State = v1StateToV2(state)
