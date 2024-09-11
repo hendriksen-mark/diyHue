@@ -153,6 +153,8 @@ class Light():
             self.state["colormode"] = "hs"
 
     def setV1State(self, state, advertise=True):
+        logging.debug("setV1State state:")
+        logging.debug(state)
         if "lights" not in state:
             state = incProcess(self.state, state)
             self.updateLightState(state)
@@ -183,7 +185,11 @@ class Light():
                     self.state["reachable"] = False
                     logging.warning(self.name + " light error, details: %s", e)
         if advertise:
+            logging.debug("advertise v1 state:")
+            logging.debug(state)
             v2State = v1StateToV2(state)
+            logging.debug("advertise v2 state:")
+            logging.debug(v2State)
             self.genStreamEvent(v2State)
 
     def setV2State(self, state):
