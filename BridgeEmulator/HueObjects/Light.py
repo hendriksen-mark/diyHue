@@ -365,7 +365,19 @@ class Light():
         result["signaling"] = {"signal_values": [
             "no_signal",
             "on_off"]}
-        result["powerup"] = {"preset": "last_on_state"}
+        result["powerup"] = {
+            "preset": "last_on_state",
+            "configured": True,
+            "on": {
+                 "mode": "on",
+                 "on": {
+                      "on": True
+                }
+            },
+            "dimming": {
+                "mode": "previous"
+            }
+        }
         result["service_id"] = self.protocol_cfg["light_nr"]-1 if "light_nr" in self.protocol_cfg else 0
         result["type"] = "light"
         return result
