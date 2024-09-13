@@ -20,6 +20,6 @@ def mdnsListener(ip, port, modelid, brigeid):
         addresses=[socket.inet_aton(ip)],
         port=port,
         properties=props,
-        server="DIYHue.local."
+        server="DIYHue-" + brigeid + ".local."
     )
     zeroconf.register_service(info) 
