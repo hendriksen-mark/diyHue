@@ -13,7 +13,7 @@ class Credits(Resource):
                         "https://github.com/mariusmotea",
                     ],
                     "licenses": {
-                        "Main Developer & Mastermind of DiyHue":""
+                        "Main Developer & Mastermind of DiyHue":"lgpl-2.0.txt"
                     },
                     "Version": "",
                     "Package": "Marius",
