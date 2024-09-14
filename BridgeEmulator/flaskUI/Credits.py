@@ -9,7 +9,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/mariusmotea",
                     ],
                     "licenses": {
@@ -24,7 +24,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/cheesemarathon",
                     ],
                     "licenses": {
@@ -39,7 +39,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/Mevel",
                     ],
                     "licenses": {
@@ -54,7 +54,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/fisico",
                     ],
                     "licenses": {
@@ -69,7 +69,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/philharmonie",
                     ],
                     "licenses": {
@@ -84,7 +84,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/hendriksen-mark",
                     ],
                     "licenses": {
@@ -99,7 +99,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/diyhue/diyHue/graphs/contributors",
                     ],
                     "licenses": {
@@ -118,7 +118,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/diyhue/diyHue",
                     ],
                     "licenses": {
@@ -137,7 +137,7 @@ class Credits(Resource):
                     "SPDX-License-Identifiers": [
                         ""
                     ],
-                  "SourceLinks": [
+                    "SourceLinks": [
                         "https://github.com/diyhue",
                     ],
                     "licenses": {
