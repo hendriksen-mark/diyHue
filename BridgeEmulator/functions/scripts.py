@@ -2,7 +2,6 @@ import logManager
 import configManager
 from time import sleep
 from random import randrange
-from flaskUI.v2restapi import v2BridgeHome
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -23,6 +22,7 @@ def findGroup(id_v2):
             return obj
         elif obj.getV2Zone()["id"] == id_v2:
             return obj
+    from flaskUI.v2restapi import v2BridgeHome
     if id_v2 == v2BridgeHome["id"]:
         return bridgeConfig["groups"]["0"]
     return False
