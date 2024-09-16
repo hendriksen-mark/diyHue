@@ -17,15 +17,15 @@ def findScene(element):
     return False
 
 def findGroup(id_v2):
+    from flaskUI.v2restapi import v2BridgeHome
     for group, obj in bridgeConfig["groups"].items():
         if obj.type != "Entertainment":
             if obj.getV2Room()["id"] == id_v2:
                 return obj
             elif obj.getV2Zone()["id"] == id_v2:
                 return obj
-    from flaskUI.v2restapi import v2BridgeHome
-    if id_v2 == v2BridgeHome()["id"]:
-        return bridgeConfig["groups"]["0"]
+            elif v2BridgeHome()["id"] == id_v2:
+                return obj
     return False
 
 def triggerScript(behavior_instance):
