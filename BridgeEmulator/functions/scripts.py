@@ -107,12 +107,7 @@ def triggerScript(behavior_instance):
     # Countdown Timer
     elif behavior_instance.script_id == "e73bc72d-96b1-46f8-aa57-729861f80c78":
         logging.debug("Start Countdown Timer " + behavior_instance.name)
-        secondsToCount = 0
-        if "duration" in behavior_instance.configuration:
-          if "minutes" in behavior_instance.configuration["duration"]:
-              secondsToCount = behavior_instance.configuration["duration"]["minutes"] * 60
-          if "seconds" in behavior_instance.configuration["duration"]:
-              secondsToCount += behavior_instance.configuration["duration"]["seconds"]
+        behavior_instance.active = True
         for element in behavior_instance.configuration["what"]:
             if "group" in element:
                 scene = findScene(element)
@@ -128,9 +123,10 @@ def triggerScript(behavior_instance):
                 sleep(behavior_instance.configuration["duration"]["seconds"])
                 if behavior_instance.active == True:
                     group.setV1Action(state={"on": False})
-        behavior_instance.active = False
-        behavior_instance.update_attr({"enabled": False})
-        logging.debug("Finish Countdown Timer " + behavior_instance.name)
+                behavior_instance.active = False
+                behavior_instance.update_attr({"enabled":False})
+                logging.debug("Finish Countdown Timer " + behavior_instance.name)
+
 
 def behaviorScripts():
     return [{
@@ -170,42 +166,6 @@ def behaviorScripts():
         "style_sunrise",
         "intensity"
       ],
-      "trigger_schema": {
-        "$ref": "trigger.json#"
-      },
-      "type": "behavior_script",
-      "version": "0.0.1"
-    },
-    {
-      "configuration_schema": {
-        "$ref": "coming_home_config.json#"
-      },
-      "description": "Automatically turn your lights to choosen light states, when you arrive at home.",
-      "id": "fd60fcd1-4809-4813-b510-4a18856a595c",
-      "metadata": {
-        "category": "automation",
-        "name": "Coming home"
-      },
-      "state_schema": {},
-      "supported_features": [],
-      "trigger_schema": {
-        "$ref": "trigger.json#"
-      },
-      "type": "behavior_script",
-      "version": "0.0.1"
-    },
-    {
-      "configuration_schema": {
-        "$ref": "leaving_home_config.json#"
-      },
-      "description": "Automatically turn off your lights when you leave",
-      "id": "0194752a-2d53-4f92-8209-dfdc52745af3",
-      "metadata": {
-        "category": "automation",
-        "name": "Leaving home"
-      },
-      "state_schema": {},
-      "supported_features": [],
       "trigger_schema": {
         "$ref": "trigger.json#"
       },
