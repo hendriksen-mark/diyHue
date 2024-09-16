@@ -107,7 +107,12 @@ def triggerScript(behavior_instance):
     # Countdown Timer
     elif behavior_instance.script_id == "e73bc72d-96b1-46f8-aa57-729861f80c78":
         logging.debug("Start Countdown Timer " + behavior_instance.name)
-        behavior_instance.active = True
+        secondsToCount = 0
+        if "duration" in behavior_instance.configuration:
+          if "minutes" in behavior_instance.configuration["duration"]:
+              secondsToCount = behavior_instance.configuration["duration"]["minutes"] * 60
+          if "seconds" in behavior_instance.configuration["duration"]:
+              secondsToCount += behavior_instance.configuration["duration"]["seconds"]
         for element in behavior_instance.configuration["what"]:
             if "group" in element:
                 scene = findScene(element)
@@ -120,12 +125,15 @@ def triggerScript(behavior_instance):
                   if element["recall"]["rid"] == "732ff1d9-76a7-4630-aad0-c8acc499bb0b": # Bright scene
                       logging.info("Apply Bright scene to group " + group.name)
                       group.setV1Action(state={"on": True, "bri": 254, "ct": 247})
-                sleep(behavior_instance.configuration["duration"]["seconds"])
+        sleep(secondsToCount)
+        for element in behavior_instance.configuration["what"]:
+            if "group" in element:
+                group = findGroup(element["group"]["rid"])
                 if behavior_instance.active == True:
                     group.setV1Action(state={"on": False})
-                behavior_instance.active = False
-                behavior_instance.update_attr({"enabled":False})
-                logging.debug("Finish Countdown Timer " + behavior_instance.name)
+        behavior_instance.active = False
+        behavior_instance.update_attr({"enabled":False})
+        logging.debug("Finish Countdown Timer " + behavior_instance.name)
 
 
 def behaviorScripts():
