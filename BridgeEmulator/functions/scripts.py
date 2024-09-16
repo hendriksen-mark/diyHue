@@ -24,7 +24,7 @@ def findGroup(id_v2):
             elif obj.getV2Zone()["id"] == id_v2:
                 return obj
     from flaskUI.v2restapi import v2BridgeHome
-    if id_v2 == v2BridgeHome["id"]:
+    if id_v2 == v2BridgeHome()["id"]:
         return bridgeConfig["groups"]["0"]
     return False
 
