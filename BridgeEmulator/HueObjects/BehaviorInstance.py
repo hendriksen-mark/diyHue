@@ -10,6 +10,7 @@ class BehaviorInstance():
         self.id_v2 = data["id"] if "id" in data else genV2Uuid()
         self.id_v1 = self.id_v2  # used for config save
         self.name = data["metadata"]["name"] if "name" in data["metadata"] else None
+        self.meta_type = data["metadata"]["type"] if "type" in data["metadata"] else None
         self.configuration = data["configuration"]
         self.enabled = data["enabled"] if "enabled" in data else False
         self.active = data["active"] if "active" in data else False
@@ -43,7 +44,8 @@ class BehaviorInstance():
                   "id": self.id_v2,
                   "last_error": "",
                   "metadata": {
-                      "name": "noname"
+                      "name": "noname",
+                      "type": "notype"
                   },
                   "script_id": self.script_id,
                   "status": "running" if self.enabled else "disabled",
@@ -53,14 +55,18 @@ class BehaviorInstance():
         if self.name != None:
             result["metadata"]["name"] = self.name
 
-        for resource in self.configuration["where"]:
-            result["dependees"].append({"level": "critical",
-                                        "target": {
-                                            "rid": resource[list(resource.keys())[0]]["rid"],
-                                            "rtype": resource[list(resource.keys())[0]]["rtype"]
-                                        },
-                                        "type": "ResourceDependee"
-                                        })
+        if self.meta_type != None:
+            result["metadata"]["type"] = self.meta_type
+
+        if "where" in self.configuration:
+            for resource in self.configuration["where"]:
+                result["dependees"].append({"level": "critical",
+                                            "target": {
+                                                "rid": resource[list(resource.keys())[0]]["rid"],
+                                                "rtype": resource[list(resource.keys())[0]]["rtype"]
+                                            },
+                                            "type": "ResourceDependee"
+                                            })
 
         return result
 
