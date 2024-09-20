@@ -120,7 +120,7 @@ def triggerScript(behavior_instance):
                 scene = findScene(element)
                 group = findGroup(element["group"]["rid"])
                 if scene:
-                    logging.info("Activate scene " + scene.name)
+                    logging.info("Activate scene " + scene.name + " to group " + group.name)
                     putDict = {"recall": {"action": "active"}}
                     scene.activate(putDict)
                 else:
@@ -128,6 +128,7 @@ def triggerScript(behavior_instance):
                       logging.info("Apply Bright scene to group " + group.name)
                       group.setV1Action(state={"on": True, "bri": 254, "ct": 247})
                   else:
+                      logging.info("Apply Bright scene to group " + group.name)
                       group.setV1Action(state={"on": True, "bri": 254, "ct": 370})
         behavior_instance.active = False
         behavior_instance.update_attr({"enabled":False})
