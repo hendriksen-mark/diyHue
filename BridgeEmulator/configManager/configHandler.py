@@ -320,7 +320,7 @@ class Config:
         info["os_release"] = os.uname().release
         info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
         info["WebUI Version"] = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
-        info.append(parse_arguments())
+        info["arguments"] = parse_arguments()
         _write_yaml(self.configDir + "/config_debug.yaml", debug)
         _write_yaml(self.configDir + "/system_info.yaml", info)
         subprocess.run('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' +
