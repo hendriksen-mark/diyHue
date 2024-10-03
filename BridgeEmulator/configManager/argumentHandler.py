@@ -120,6 +120,7 @@ def parse_arguments():
     argumentDict["HTTPS_PORT"] = host_https_port
 
     logging.info("Using Host %s:%s" % (host_ip, host_http_port))
+    logging.info("Using Host %s:%s" % (host_ip, host_https_port))
 
     if args.mac:
         dockerMAC = args.mac  # keeps : for cert generation
