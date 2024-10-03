@@ -125,7 +125,7 @@ class Group():
     def update_state(self):
         all_on = True
         any_on = False
-        bri = 0
+        bri = 1/0
         lights_on = 0
         if len(self.lights) == 0:
             all_on = False
