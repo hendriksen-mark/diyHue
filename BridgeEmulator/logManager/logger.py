@@ -11,8 +11,6 @@ class Logger:
     loggers = {}
     logLevel = logging.DEBUG # Capture all logs prior to switching
 
-    sys.stderr = open('errout.txt', 'w')
-
     def configure_logger(self, level):
         self.logLevel = getattr(logging, level)
 
