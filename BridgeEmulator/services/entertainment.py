@@ -14,8 +14,6 @@ cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller
 briTolerange = 16 # new frames will be ignored if the brightness change is smaller than this values
 lastAppliedFrame = {}
 YeelightConnections = {}
-prev_frame_time = 1
-new_frame_time = 1
 
 def skipSimilarFrames(light, color, brightness):
     if light not in lastAppliedFrame: # check if light exist in dictionary
@@ -68,6 +66,8 @@ def entertainmentService(group, user):
     lights_v1 = {}
     hueGroup  = -1
     hueGroupLights = {}
+    prev_frame_time = 0
+    new_frame_time = 0
     for light in group.lights:
         lights_v1[int(light().id_v1)] = light()
         if light().protocol == "hue" and get_hue_entertainment_group(light(), group.name) != -1: # If the lights' Hue bridge has an entertainment group with the same name as this current group, we use it to sync the lights.
