@@ -125,7 +125,7 @@ class Group():
     def update_state(self):
         all_on = True
         any_on = False
-        bri = 1/0
+        bri = 0
         lights_on = 0
         if len(self.lights) == 0:
             all_on = False
@@ -139,7 +139,7 @@ class Group():
                 else:
                     all_on = False
         if any_on:
-            bri = (((bri/lights_on)/254)*100)
+            bri = (((bri/lights_on)/254)*100) if bri > 0 else 0
         return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
 
     def setV2Action(self, state):
