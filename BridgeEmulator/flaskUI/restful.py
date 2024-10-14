@@ -286,6 +286,9 @@ class ResourceElements(Resource):
                     for email, hash in bridgeConfig["config"]["users"].items():
                         if putDict["users"][key] == bridgeConfig["config"]["users"][email]:
                             bridgeConfig["config"]["users"][email]["password"] = generate_password_hash(str(value['password']))
+            if "loglevel" in putDict:
+                logManager.logger.configure_logger(putDict["loglevel"])
+                logging.info("Change log level to: " + str(logManager.logger.get_level_name()))
 
         # build response list
         responseList = []
