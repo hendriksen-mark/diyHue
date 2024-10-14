@@ -14,8 +14,8 @@ cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller
 briTolerange = 16 # new frames will be ignored if the brightness change is smaller than this values
 lastAppliedFrame = {}
 YeelightConnections = {}
-prev_frame_time = 0
-new_frame_time = 0
+prev_frame_time = 1
+new_frame_time = 1
 
 def skipSimilarFrames(light, color, brightness):
     if light not in lastAppliedFrame: # check if light exist in dictionary
