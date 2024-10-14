@@ -68,6 +68,7 @@ def entertainmentService(group, user):
     hueGroupLights = {}
     prev_frame_time = 0
     new_frame_time = 0
+    prev_frameID = 0
     for light in group.lights:
         lights_v1[int(light().id_v1)] = light()
         if light().protocol == "hue" and get_hue_entertainment_group(light(), group.name) != -1: # If the lights' Hue bridge has an entertainment group with the same name as this current group, we use it to sync the lights.
@@ -281,9 +282,11 @@ def entertainmentService(group, user):
                     if len(hueGroupLights) != 0:
                         h.send(hueGroupLights, hueGroup)
                     new_frame_time = time.time()
-                    fps = 1/(new_frame_time-prev_frame_time)
-                    prev_frame_time = new_frame_time
-                    logging.info("Entertainment FPS: " + str(fps))
+                    if new_frame_time - prev_frame_time > 1:
+                        fps = frameID - prev_frameID
+                        prev_frame_time = new_frame_time
+                        prev_frameID = frameID
+                        logging.info("Entertainment FPS: " + str(fps))
                 else:
                     logging.info("HueStream was missing in the frame")
                     p.kill()
