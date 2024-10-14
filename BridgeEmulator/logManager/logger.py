@@ -48,4 +48,11 @@ class Logger:
         return self.loggers[name]
 
     def get_level_name(self):
-        return self.logLevel
+        INFO = 20
+        DEBUG = 10
+
+        _levelToName = {
+            INFO: 'INFO',
+            DEBUG: 'DEBUG',
+        }
+        return _levelToName.get(self.logLevel)
