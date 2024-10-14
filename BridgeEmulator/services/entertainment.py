@@ -6,6 +6,7 @@ import socket, json, uuid
 from subprocess import Popen, PIPE
 from functions.colors import convert_rgb_xy, convert_xy
 import paho.mqtt.publish as publish
+import time
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
@@ -13,6 +14,8 @@ cieTolerance = 0.03 # new frames will be ignored if the color  change is smaller
 briTolerange = 16 # new frames will be ignored if the brightness change is smaller than this values
 lastAppliedFrame = {}
 YeelightConnections = {}
+prev_frame_time = 0
+new_frame_time = 0
 
 def skipSimilarFrames(light, color, brightness):
     if light not in lastAppliedFrame: # check if light exist in dictionary
@@ -277,6 +280,10 @@ def entertainmentService(group, user):
                             sock.sendto(udpdata, (ip.split(":")[0], 21324))
                     if len(hueGroupLights) != 0:
                         h.send(hueGroupLights, hueGroup)
+                    new_frame_time = time.time()
+                    fps = 1/(new_frame_time-prev_frame_time)
+                    prev_frame_time = new_frame_time
+                    logging.info("Entertainment FPS: " + str(fps))
                 else:
                     logging.info("HueStream was missing in the frame")
                     p.kill()
