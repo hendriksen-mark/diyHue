@@ -36,7 +36,7 @@ def iter_ips(port):
     ip_range_end = argsDict["IP_RANGE_END"]
     host = HOST_IP.split('.')
     sub_ip_range_start = argsDict["SUB_IP_RANGE_START"]
-    sub_ip_range_end = argsDict["SUB_IP_RANGE_END"]
+    sub_ip_range_end = argsDict["SUB_IP_RANGE_END"] + 1
     if scan_on_host_ip:
         yield ('127.0.0.1', port)
         return
