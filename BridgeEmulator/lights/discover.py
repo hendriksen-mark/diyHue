@@ -19,6 +19,7 @@ def pretty_json(data):
 
 
 def scanHost(host, port):
+    logging.debug("scanHost IP: " + str(host) + ":" + str(port))
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Very short timeout. If scanning fails this could be increased
     sock.settimeout(0.02)
