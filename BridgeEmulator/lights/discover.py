@@ -34,14 +34,18 @@ def iter_ips(port):
     ip_range_start = argsDict["IP_RANGE_START"]
     ip_range_end = argsDict["IP_RANGE_END"]
     host = HOST_IP.split('.')
+    sub_ip_range_start = argsDict["SUB_IP_RANGE_START"]
+    sub_ip_range_end = argsDict["SUB_IP_RANGE_END"]
     if scan_on_host_ip:
         yield ('127.0.0.1', port)
         return
-    for addr in range(ip_range_start, ip_range_end + 1):
-        host[3] = str(addr)
-        test_host = '.'.join(host)
-        if test_host != HOST_IP:
-            yield (test_host, port)
+    for sub_addr in range(sub_ip_range_start, sub_ip_range_end + 1):
+        host[2] = str(sub_addr)
+        for addr in range(ip_range_start, ip_range_end + 1):
+            host[3] = str(addr)
+            test_host = '.'.join(host)
+            if test_host != HOST_IP:
+                yield (test_host, port)
 
 
 def find_hosts(port):

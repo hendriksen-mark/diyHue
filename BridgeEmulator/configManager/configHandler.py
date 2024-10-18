@@ -30,7 +30,8 @@ def _write_yaml(path, contents):
 
 class Config:
     yaml_config = None
-    configDir = parse_arguments()["CONFIG_PATH"]
+    argsDict = parse_arguments()
+    configDir = argsDict["CONFIG_PATH"]
     runningDir = str(pathlib.Path(__file__)).replace("/configManager/configHandler.py","")
 
     def __init__(self):
@@ -110,7 +111,7 @@ class Config:
                     "name":"DiyHue Bridge",
                     "netmask":"255.255.255.0",
                     "swversion":"1965111030",
-                    "timezone":parse_arguments()["TZ"],
+                    "timezone": self.argsDict["TZ"],
                     "linkbutton":{"lastlinkbuttonpushed": 1599398980},
                     "users":{"admin@diyhue.org":{"password":"pbkdf2:sha256:150000$bqqXSOkI$199acdaf81c18f6ff2f29296872356f4eb78827784ce4b3f3b6262589c788742"}},
                     "hue": {},

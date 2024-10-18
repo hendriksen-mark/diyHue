@@ -36,7 +36,7 @@ def process_arguments(configDir, args):
 def parse_arguments():
     argumentDict = {"BIND_IP": '', "HOST_IP": '', "HTTP_PORT": '', "HTTPS_PORT": '', "FULLMAC": '', "MAC": '', "DEBUG": False, "DOCKER": False,
                     "IP_RANGE_START": '', "IP_RANGE_END": '', "DECONZ": '', "scanOnHostIP": False, "disableOnlineDiscover": '', "noLinkButton": False,
-                    "noServeHttps": False, "TZ": ''}
+                    "noServeHttps": False, "TZ": '', "SUB_IP_RANGE_START": '', "SUB_IP_RANGE_END": ''}
     ap = argparse.ArgumentParser()
 
     # Arguements can also be passed as Environment Variables.
@@ -50,8 +50,8 @@ def parse_arguments():
     ap.add_argument("--mac", help="The MAC address of the host system (Docker)", type=str)
     ap.add_argument("--no-serve-https", action='store_true', help="Don't listen on port 443 with SSL")
     ap.add_argument("--ip-range", help="Set IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
-    ap.add_argument("--scan-on-host-ip", action='store_true',
-                    help="Scan the local IP address when discovering new lights")
+    ap.add_argument("--sub-ip-range", help="Set SUB IP range for light discovery. Format: <START_IP>,<STOP_IP>", type=str)
+    ap.add_argument("--scan-on-host-ip", action='store_true', help="Scan the local IP address when discovering new lights")
     ap.add_argument("--deconz", help="Provide the IP address of your Deconz host. 127.0.0.1 by default.", type=str)
     ap.add_argument("--no-link-button", action='store_true',
                     help="DANGEROUS! Don't require the link button to be pressed to pair the Hue app, just allow any app to connect")
@@ -163,9 +163,37 @@ def parse_arguments():
     else:
         ip_range_start = 0
         ip_range_end = 255
+    if ip_range_start > ip_range_end:
+            ip_range_start, ip_range_end = ip_range_start, ip_range_end
+
+    if args.sub_ip_range or get_environment_variable('SUB_IP_RANGE'):
+        if args.sub_ip_range:
+            ranges = args.sub_ip_range
+        else:
+            ranges = get_environment_variable('SUB_IP_RANGE')
+        ranges = ranges.split(',')
+        if ranges[0] and int(ranges[0]) >= 0:
+            sub_ip_range_start = int(ranges[0])
+        else:
+            sub_ip_range_start = host_ip.split('.')[2]
+
+        if ranges[1] and int(ranges[1]) > 0:
+            sub_ip_range_end = int(ranges[1])
+        else:
+            sub_ip_range_end = host_ip.split('.')[2]
+    elif get_environment_variable('SUB_IP_RANGE_START') and get_environment_variable('SUB_IP_RANGE_END'):
+        sub_ip_range_start = get_environment_variable('SUB_IP_RANGE_START')
+        sub_ip_range_end = get_environment_variable('SUB_IP_RANGE_END')
+    else:
+        sub_ip_range_start = host_ip.split('.')[2]
+        sub_ip_range_end = host_ip.split('.')[2]
+    if sub_ip_range_start > sub_ip_range_end:
+            sub_ip_range_start, sub_ip_range_end = sub_ip_range_start, sub_ip_range_end
     argumentDict["IP_RANGE_START"] = ip_range_start
     argumentDict["IP_RANGE_END"] = ip_range_end
-    logging.info("IP range for light discovery: " + str(ip_range_start) + "-" + str(ip_range_end))
+    argumentDict["SUB_IP_RANGE_START"] = sub_ip_range_start
+    argumentDict["SUB_IP_RANGE_END"] = sub_ip_range_end
+    logging.info("IP range for light discovery: " + str(host_ip.split('.')[0]) + "." + str(host_ip.split('.')[1]) + "." + str(sub_ip_range_start) + "." + str(ip_range_start) + "-" + str(host_ip.split('.')[0]) + "." + str(host_ip.split('.')[1]) + "." + str(sub_ip_range_end) + "." + str(ip_range_end))
 
     if args.deconz:
         deconz_ip = args.deconz
