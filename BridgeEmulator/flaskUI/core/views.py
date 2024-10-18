@@ -121,8 +121,8 @@ def download_debug():
 @core.route('/restart')
 def restart():
     logging.info("restart " + str(sys.executable) + " with args : " + str(sys.argv))
-    os.execl(sys.executable, sys.executable, *sys.argv)
-    return "restart python with args"
+    #os.execl(sys.executable, sys.executable, *sys.argv)
+    return "restart python with args", os.execl(sys.executable, sys.executable, *sys.argv)
 
 @core.route('/info')
 #@flask_login.login_required
