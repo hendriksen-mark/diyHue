@@ -38,7 +38,7 @@ def get_lights():
     result = {}
     for light, object in bridgeConfig["lights"].items():
         result[light] = object.save()
-    return sorted(result,key=result["name"])
+    return sorted(result,key=lambda x: x["name"])
 
 @core.route('/sensors')
 #@flask_login.login_required
