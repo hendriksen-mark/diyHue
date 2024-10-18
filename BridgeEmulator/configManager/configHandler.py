@@ -1,4 +1,4 @@
-from configManager import configInit
+from configManager import configInit, runtimeConfig
 from configManager.argumentHandler import parse_arguments
 import os
 import pathlib
@@ -30,7 +30,7 @@ def _write_yaml(path, contents):
 
 class Config:
     yaml_config = None
-    argsDict = parse_arguments()
+    argsDict = runtimeConfig.arg#parse_arguments()
     configDir = argsDict["CONFIG_PATH"]
     runningDir = str(pathlib.Path(__file__)).replace("/configManager/configHandler.py","")
 
