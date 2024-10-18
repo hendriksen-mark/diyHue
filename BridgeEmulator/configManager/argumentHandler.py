@@ -175,18 +175,18 @@ def parse_arguments():
         if ranges[0] and int(ranges[0]) >= 0:
             sub_ip_range_start = int(ranges[0])
         else:
-            sub_ip_range_start = host_ip.split('.')[2]
+            sub_ip_range_start = int(host_ip.split('.')[2])
 
         if ranges[1] and int(ranges[1]) > 0:
             sub_ip_range_end = int(ranges[1])
         else:
-            sub_ip_range_end = host_ip.split('.')[2]
+            sub_ip_range_end = int(host_ip.split('.')[2])
     elif get_environment_variable('SUB_IP_RANGE_START') and get_environment_variable('SUB_IP_RANGE_END'):
         sub_ip_range_start = get_environment_variable('SUB_IP_RANGE_START')
         sub_ip_range_end = get_environment_variable('SUB_IP_RANGE_END')
     else:
-        sub_ip_range_start = host_ip.split('.')[2]
-        sub_ip_range_end = host_ip.split('.')[2]
+        sub_ip_range_start = int(host_ip.split('.')[2])
+        sub_ip_range_end = int(host_ip.split('.')[2])
     if sub_ip_range_start > sub_ip_range_end:
             sub_ip_range_start, sub_ip_range_end = sub_ip_range_start, sub_ip_range_end
     argumentDict["IP_RANGE_START"] = ip_range_start
