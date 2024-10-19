@@ -52,6 +52,8 @@ class Config:
                     self.yaml_config["apiUsers"][user] = ApiUser.ApiUser(user, data["name"], data["client_key"], data["create_date"], data["last_use_date"])
                 del config["whitelist"]
                 # updgrade config
+                if "discovery" not in config:
+                    config["discovery"] = False
                 if "homeassistant" not in config:
                     config["homeassistant"] = {"enabled": False}
                 if "yeelight" not in config:
