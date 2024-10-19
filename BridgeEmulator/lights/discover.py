@@ -137,9 +137,6 @@ def scanForLights():  # scan for ESP8266 lights and strips
         # return all host that listen on port 80
         device_ips = find_hosts(80)
 
-
-    # return all host that listen on port 80
-    #device_ips = find_hosts(80)
     logging.info(pretty_json(device_ips))
     if bridgeConfig["config"]["mqtt"]["enabled"]:
         # brioadcast MQTT message, lights will be added by the service
@@ -159,12 +156,14 @@ def scanForLights():  # scan for ESP8266 lights and strips
         # Most of the other discoveries are disabled by having no IP address (--disable-network-scan)
         # But wled does an mdns discovery as well.
         wled.discover(detectedLights, device_ips)
-    hue.discover(detectedLights, bridgeConfig["config"]["hue"])
+    if bridgeConfig["config"]["hue"]:
+        hue.discover(detectedLights, bridgeConfig["config"]["hue"])
     if bridgeConfig["config"]["shelly"]["enabled"]:
         shelly.discover(detectedLights, device_ips)
     if bridgeConfig["config"]["esphome"]["enabled"]:
         esphome.discover(detectedLights, device_ips)
-    tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
+    if bridgeConfig["config"]["tradfri"]:
+        tradfri.discover(detectedLights, bridgeConfig["config"]["tradfri"])
     if bridgeConfig["config"]["hyperion"]["enabled"]:
         hyperion.discover(detectedLights)
     if bridgeConfig["config"]["tpkasa"]["enabled"]:
