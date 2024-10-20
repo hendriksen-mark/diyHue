@@ -315,9 +315,6 @@ class ClipV2(Resource):
             lightlevel = sensor.getLightlevel()
             if lightlevel != None:
                 data.append(lightlevel)
-            #contact = sensor.getContact()
-            #if contact != None:
-                #data.append(contact)
 
         return {"errors": [], "data": data}
 
@@ -427,11 +424,6 @@ class ClipV2Resource(Resource):
                 lightlevel = sensor.getLightlevel()
                 if lightlevel != None:
                     response["data"].append(lightlevel)
-        #elif resource == "contact":
-            #for key, sensor in bridgeConfig["sensors"].items():
-                #contact = sensor.getContact()
-                #if contact != None:
-                    #response["data"].append(contact)
         else:
             response["errors"].append({"description": "Not Found"})
             del response["data"]
@@ -610,8 +602,6 @@ class ClipV2ResourceId(Resource):
             return {"errors": [], "data": [object.getTemperature()]}
         elif resource == "light_level":
             return {"errors": [], "data": [object.getLightlevel()]}
-        #elif resource == "contact":
-            #return {"errors": [], "data": [object.getContact()]}
 
     def put(self, resource, resourceid):
         logging.debug(request.headers)
