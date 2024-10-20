@@ -52,7 +52,7 @@ def threadDelayAction(actionsToExecute, device, monitoredKey, monitoredValue, gr
             secondsCounter =  actionsToExecute["timer"]["duration"]["minutes"] * 60
         if "seconds" in  actionsToExecute["timer"]["duration"]:
             secondsCounter +=  actionsToExecute["timer"]["duration"]["seconds"]
-    print("to wait " + str(secondsCounter))
+    logging.debug("to wait " + str(secondsCounter))
     while device.state[monitoredKey] == monitoredValue:
         if secondsCounter == 0:
             executeActions(actionsToExecute, groupsAndLights)
@@ -78,7 +78,7 @@ def executeActions(actionsToExecute, groupsAndLights):
 
 
 def checkBehaviorInstances(device):
-    print("enter checkBehaviorInstances")
+    logging.debug("enter checkBehaviorInstances")
     deviceUuid = device.id_v2 
     matchedInstances = []
     for key, instance in bridgeConfig["behavior_instance"].items():
@@ -153,14 +153,15 @@ def checkBehaviorInstances(device):
                                 resource.setV1Action({"bri_inc": +30})
                             elif instance.configuration["buttons"][button][buttonAction]["action"] == "dim_down":
                                 resource.setV1Action({"bri_inc": -30})
-
         elif device.modelid == "SML001": # Motion Sensor
             if "settings" in instance.configuration:
                 if "daylight_sensitivity" in instance.configuration["settings"]:
+                    if device.elements["ZLLLightLevel"]().protocol_cfg["lightSensor"] == "on":
+                        device.elements["ZLLLightLevel"]().state["lightlevel"] = 25000 if bridgeConfig["sensors"]["1"].state["daylight"] else 6000
                     if instance.configuration["settings"]["daylight_sensitivity"]["dark_threshold"] >= device.elements["ZLLLightLevel"]().state["lightlevel"]:
-                        print("Light ok")
+                        logging.debug("Light ok")
                     else:
-                        print("Light ko")
+                        logging.debug("Light ko")
                         return
             motion = device.elements["ZLLPresence"]().state["presence"]
             any_on = False
@@ -239,10 +240,4 @@ def checkBehaviorInstances(device):
                             
                     elif "time_based" in instance.configuration[button][buttonAction]:
                         if "slots" in instance.configuration[button][buttonAction]["time_based"]:
-                            print("to be done")
-                    
-            
-                
-            
-                    
-                    
+                            logging.debug("to be done")
