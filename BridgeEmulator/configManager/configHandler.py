@@ -1,5 +1,5 @@
 from configManager import configInit
-from configManager.argumentHandler import parse_arguments
+from configManager.argumentHandler import parse_arguments, generate_certificate
 import os
 import pathlib
 import subprocess
@@ -290,6 +290,15 @@ class Config:
         self.load_config()
         return backup
 
+    def remove_cert(self):
+        try:
+            os.popen('mv ' + self.configDir + '/cert.pem ' + self.configDir + '/backup/')
+            logging.info("Certificate removed")
+        except:
+            logging.exception("Something went wrong when deleting the certificate")
+        generate_certificate(self.argsDict["MAC"], self.argsDict["CONFIG_PATH"])
+        return
+
     def restore_backup(self):
         try:
             os.popen('rm -r ' + self.configDir + '/*.yaml')
@@ -323,7 +332,7 @@ class Config:
         info["os_release"] = os.uname().release
         info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
         info["WebUI Version"] = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
-        info["arguments"] = parse_arguments()
+        info["arguments"] = self.argsDict
         _write_yaml(self.configDir + "/config_debug.yaml", debug)
         _write_yaml(self.configDir + "/system_info.yaml", info)
         subprocess.run('tar --exclude=' + "'config.yaml'" + ' -cvf ' + self.configDir + '/config_debug.tar ' +
