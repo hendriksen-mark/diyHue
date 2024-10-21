@@ -312,7 +312,7 @@ class Sensor():
                 "temperature": {
                     "temperature_report":{
                         "changed": self.state["lastupdated"],
-                        "temperature": self.state["temperature"]/100
+                        "temperature": self.state["temperature"] if self.state["temperature"] == None else self.state["temperature"]/100
                     }
                 },
                 "owner": {
