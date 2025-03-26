@@ -12,10 +12,12 @@
       "args": [
         "--docker",
         "--mac",
-        "f8:ff:c2:11:be:75",
+        "XX:XX:XX:XX:XX:XX",
         "--config_path",
         "${workspaceFolder}/config",
-        "--debug"
+        "--debug",
+        "--bind-ip",
+        "XXX.XXX.XXX.XXX"
       ],
       "console": "integratedTerminal"
     }

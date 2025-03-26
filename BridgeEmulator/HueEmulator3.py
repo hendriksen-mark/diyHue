@@ -160,7 +160,7 @@ def runHttp(BIND_IP, HOST_HTTP_PORT, HOST_HTTPS_PORT, DISABLE_HTTPS, CONFIG_PATH
         finally:
             logging.info("HTTP/HTTPS server has stopped")
 
-if __name__ == '__main__':
+def main():
     from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS, updateManager
     ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
@@ -193,3 +193,6 @@ if __name__ == '__main__':
 
     runHttp(BIND_IP, HOST_HTTP_PORT, HOST_HTTPS_PORT, DISABLE_HTTPS, CONFIG_PATH)
     logging.info("HTTP/HTTPS server thread started")
+
+if __name__ == '__main__':
+    main()
