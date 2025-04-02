@@ -9,7 +9,6 @@ import os
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 import asyncio
-import time
 
 import configManager
 import logManager
@@ -27,6 +26,7 @@ from functions.daylightSensor import daylightSensor
 # Initialize configurations and logging
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
+hypercorn_logger = logManager.logger.get_logger('hypercorn')
 
 # Initialize Flask app and API
 app = Flask(__name__, template_folder='flaskUI/templates', static_url_path="/assets", static_folder='flaskUI/assets')
@@ -128,8 +128,8 @@ def check_cert(CONFIG_PATH):
 
 def runHttp(BIND_IP, HOST_HTTP_PORT, HOST_HTTPS_PORT, DISABLE_HTTPS, CONFIG_PATH):
     config = HyperConfig()
-    config.accesslog = logManager.logger.get_logger('hypercorn')
-    config.errorlog = logManager.logger.get_logger('hypercorn')
+    config.accesslog = hypercorn_logger
+    config.errorlog = hypercorn_logger
     config.loglevel = 'DEBUG'
     config.access_log_format = '%(h)s %(r)s %(s)s'
     config.insecure_bind = [f"{BIND_IP}:{HOST_HTTP_PORT}"]
@@ -142,7 +142,9 @@ def runHttp(BIND_IP, HOST_HTTP_PORT, HOST_HTTPS_PORT, DISABLE_HTTPS, CONFIG_PATH
     while True:
         try:
             logging.info("Starting HTTP/HTTPS server")
-            asyncio.run(serve(app, config))
+            asyncio.run(asyncio.wait_for(serve(app, config), timeout=60))  # Add timeout to prevent indefinite hang
+        except asyncio.TimeoutError:
+            logging.warning("HTTP/HTTPS server timed out, restarting...")
         except ssl.SSLError as ssl_error:
             if ssl_error.reason == 'APPLICATION_DATA_AFTER_CLOSE_NOTIFY':
                 logging.warning(f"SSL error occurred: {ssl_error} - Ignoring and continuing")
@@ -173,24 +175,37 @@ def main():
     check_cert(CONFIG_PATH)
     updateManager.startupCheck()
 
+    logging.info("Starting daylight sensor thread")
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
     ### start services
     if bridgeConfig["config"]["deconz"]["enabled"]:
+        logging.info("Starting deCONZ websocket client thread")
         Thread(target=deconz.websocketClient).start()
     if bridgeConfig["config"]["mqtt"]["enabled"]:
+        logging.info("Starting MQTT server thread")
         Thread(target=mqtt.mqttServer).start()
     if bridgeConfig["config"]["homeassistant"]["enabled"]:
+        logging.info("Starting Home Assistant WebSocket client")
         homeAssistantWS.create_ws_client(bridgeConfig)
     if not ("discovery" in bridgeConfig["config"] and bridgeConfig["config"]["discovery"] == False):
+        logging.info("Starting remote discovery thread")
         Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
+    logging.info("Starting remote API thread")
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
+    logging.info("Starting state fetch thread")
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
+    logging.info("Starting SSDP search thread")
     Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+    logging.info("Starting SSDP broadcast thread")
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
+    logging.info("Starting mDNS listener thread")
     Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
+    logging.info("Starting scheduler thread")
     Thread(target=scheduler.runScheduler).start()
+    logging.info("Starting event streamer thread")
     Thread(target=eventStreamer.messageBroker).start()
 
+    logging.info("Starting HTTP/HTTPS server")
     runHttp(BIND_IP, HOST_HTTP_PORT, HOST_HTTPS_PORT, DISABLE_HTTPS, CONFIG_PATH)
     logging.info("HTTP/HTTPS server thread started")
 
