@@ -3,14 +3,14 @@ import logging.handlers
 import sys
 
 
-def _get_log_format():
-    """Return the log format for the logger."""
-    return logging.Formatter('%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s')
-
-
 class Logger:
     loggers = {}
     logLevel = logging.DEBUG  # Capture all logs prior to switching
+
+    @staticmethod
+    def _get_log_format():
+        """Return the log format for the logger."""
+        return logging.Formatter('%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s')
 
     def configure_logger(self, level):
         """Configure the logging level for all loggers."""
@@ -26,21 +26,21 @@ class Logger:
 
         # Stream handler for stdout
         stdout_handler = logging.StreamHandler(sys.stdout)
-        stdout_handler.setFormatter(_get_log_format())
+        stdout_handler.setFormatter(self._get_log_format())
         stdout_handler.setLevel(self.logLevel)
         stdout_handler.addFilter(lambda record: record.levelno <= logging.INFO)
         logger.addHandler(stdout_handler)
 
         # Stream handler for stderr
         stderr_handler = logging.StreamHandler(sys.stderr)
-        stderr_handler.setFormatter(_get_log_format())
+        stderr_handler.setFormatter(self._get_log_format())
         stderr_handler.setLevel(logging.WARNING)
         logger.addHandler(stderr_handler)
 
         # Rotating file handler
         file_handler = logging.handlers.RotatingFileHandler(
             filename='diyhue.log', maxBytes=10000000, backupCount=7)
-        file_handler.setFormatter(_get_log_format())
+        file_handler.setFormatter(self._get_log_format())
         file_handler.setLevel(logging.DEBUG)
         file_handler.addFilter(lambda record: record.levelno <= logging.CRITICAL)
         logger.addHandler(file_handler)
