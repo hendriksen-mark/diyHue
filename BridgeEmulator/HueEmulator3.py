@@ -9,7 +9,7 @@ import os
 import configManager
 import logManager
 import flask_login
-from flaskUI.core import User #dummy import for flaks_login module
+from flaskUI.core import User  # dummy import for flask_login module
 from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam, ElementParamId
 from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
 from flaskUI.espDevices import Switch
@@ -24,9 +24,9 @@ WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
 # Customize Werkzeug logger format
 werkzeug_handler = werkzeug_logger.handlers[0]  # Get the default handler
-werkzeug_handler.setFormatter(logManager.logger._get_log_format())  # Call _get_log_format as a static method
+werkzeug_handler.setFormatter(logManager.logger._get_werkzeug_log_format())  # Use Werkzeug-specific formatter
 
-app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/assets", static_folder='flaskUI/assets')
+app = Flask(__name__, template_folder='flaskUI/templates', static_url_path="/assets", static_folder='flaskUI/assets')
 api = Api(app)
 cors = CORS(app, resources={r"*": {"origins": "*"}})
 
@@ -34,16 +34,13 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(24))  # Load from 
 api.app.config['RESTFUL_JSON'] = {'ensure_ascii': False}
 
 login_manager = flask_login.LoginManager()
-# We can now pass in our app to the login manager
 login_manager.init_app(app)
-# Tell users what view to go to when they need to login.
 login_manager.login_view = "core.login"
 
 @login_manager.user_loader
 def user_loader(email):
     if email not in bridgeConfig["config"]["users"]:
-        return None  # Explicitly return None
-
+        return None
     user = User()
     user.id = email
     return user
@@ -52,20 +49,14 @@ def user_loader(email):
 def request_loader(request):
     email = request.form.get('email')
     if email not in bridgeConfig["config"]["users"]:
-        return None  # Explicitly return None
-
+        return None
     user = User()
     user.id = email
-
-    # DO NOT ever store passwords in plaintext and always compare password
-    # hashes using constant-time comparison!
-    # print(email)  # Remove print statement
     logging.info(f"Authentication attempt for user: {email}")
     user.is_authenticated = compare_passwords(request.form['password'], bridgeConfig["config"]["users"][email]["password"])
     return user
 
 def compare_passwords(input_password, stored_password):
-    # Implement a secure password comparison (e.g., using bcrypt)
     return check_password_hash(stored_password, input_password)
 
 ### Licence/credits
@@ -112,7 +103,6 @@ def runHttp(BIND_IP, HOST_HTTP_PORT):
 
 def main():
     from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS, updateManager
-    ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
     HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
     mac = configManager.runtimeConfig.arg["MAC"]
@@ -123,7 +113,6 @@ def main():
     updateManager.startupCheck()
 
     Thread(target=daylightSensor, args=[bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"]]).start()
-    ### start services
     if bridgeConfig["config"]["deconz"]["enabled"]:
         Thread(target=deconz.websocketClient).start()
     if bridgeConfig["config"]["mqtt"]["enabled"]:
