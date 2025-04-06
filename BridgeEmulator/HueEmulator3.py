@@ -22,10 +22,6 @@ logging = logManager.logger.get_logger(__name__)
 werkzeug_logger = logManager.logger.get_logger("werkzeug")
 WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
-# Customize Werkzeug logger format
-werkzeug_handler = werkzeug_logger.handlers[0]  # Get the default handler
-werkzeug_handler.setFormatter(logManager.logger._get_werkzeug_log_format())  # Use Werkzeug-specific formatter
-
 app = Flask(__name__, template_folder='flaskUI/templates', static_url_path="/assets", static_folder='flaskUI/assets')
 api = Api(app)
 cors = CORS(app, resources={r"*": {"origins": "*"}})
