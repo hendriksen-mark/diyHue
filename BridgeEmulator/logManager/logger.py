@@ -12,6 +12,11 @@ class Logger:
         """Return the log format for the logger."""
         return logging.Formatter('%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s')
 
+    @staticmethod
+    def _get_werkzeug_log_format():
+        """Return the log format for Werkzeug logger."""
+        return logging.Formatter('%(message)s')  # Exclude timestamp and other metadata
+
     def configure_logger(self, level):
         """Configure the logging level for all loggers."""
         self.logLevel = getattr(logging, level.upper(), logging.DEBUG)
