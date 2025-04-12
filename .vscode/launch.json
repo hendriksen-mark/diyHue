@@ -19,7 +19,8 @@
         "--bind-ip",
         "XXX.XXX.XXX.XXX"
       ],
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "sudo": true,
     }
   ]
 }
