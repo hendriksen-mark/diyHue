@@ -1,4 +1,4 @@
-from flask import render_template, request, Blueprint, url_for
+from quart import render_template, request, Blueprint, url_for
 import flask_login
 import configManager
 import logManager
@@ -16,7 +16,7 @@ devices = Blueprint('devices',__name__)
 
 @devices.route('/devices', methods=['GET', 'POST'])
 @flask_login.login_required
-def sensors():
+async def sensors():
     form = DevicesForm()
     groups = []
     devicesConfig = []
@@ -40,7 +40,8 @@ def sensors():
                         del bridgeConfig[pices[1]][pices[2]]
                 del bridgeConfig["resourcelinks"][resourcelink]
         # set new rules
-        formFields = request.form.to_dict()
+        formFields = await request.form
+        formFields = formFields.to_dict()
         for key, value in formFields.items():
             if key.startswith('device-'):
                 deviceid = key[7:]
@@ -64,4 +65,4 @@ def sensors():
                 device.protocol_cfg["lightSensor"] = formFields["motion-" + device.id_v1]
         configManager.bridgeConfig.save_config()
 
-    return render_template('devices.html', groups=groups, devicesConfig=devicesConfig, motionSensors=motionSensorsConfig, form=form)
+    return await render_template('devices.html', groups=groups, devicesConfig=devicesConfig, motionSensors=motionSensorsConfig, form=form)

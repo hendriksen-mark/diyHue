@@ -1,9 +1,9 @@
 # Form Based Imports
-from flask_wtf import FlaskForm
+from quart_wtf import QuartForm
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired,Email
+from wtforms.validators import DataRequired, Email
 
-class LoginForm(FlaskForm):
+class LoginForm(QuartForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Log In')

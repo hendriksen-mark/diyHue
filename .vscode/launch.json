@@ -1,23 +1,26 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Launch diyHue",
-        "type": "debugpy",
-        "request": "launch",
-        "program": "${workspaceFolder}/BridgeEmulator/HueEmulator3.py",
-        "args": [
-          "--docker",
-          "--mac",
-          "xx:xx:xx:xx:xx:xx",
-          "--config_path",
-          "${workspaceFolder}/config",
-          "--debug"
-        ],
-        "console": "integratedTerminal"
-      }
-    ]
-  }
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch diyHue",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/BridgeEmulator/HueEmulator3.py",
+      "args": [
+        "--docker",
+        "--mac",
+        "f8:ff:c2:11:be:75",
+        "--config_path",
+        "${workspaceFolder}/config",
+        "--debug",
+        "--bind-ip",
+        "192.168.1.3"
+      ],
+      "console": "integratedTerminal",
+      "sudo": true,
+    }
+  ]
+}

@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
 from functions.core import capabilities, staticConfig, nextFreeId
 from flask_restful import Resource
-from flask import request
+from quart import request
 from functions.rules import rulesProcessor
 from services.entertainment import entertainmentService
 from services.updateManager import githubCheck, versionCheck, githubInstall
@@ -69,11 +69,11 @@ def buildConfig():
 
 
 class NewUser(Resource):
-    def get(self):
+    async def get(self):
         return [{"error": {"type": 4, "address": "/api", "description": "method, GET, not available for resource, /"}}]
 
-    def post(self):
-        postDict = request.get_json(force=True)
+    async def post(self):
+        postDict = await request.get_json(force=True)
         logging.info(postDict)
         if "devicetype" in postDict:
             last_button_press = bridgeConfig["config"]["linkbutton"]["lastlinkbuttonpushed"]

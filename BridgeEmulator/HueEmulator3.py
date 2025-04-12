@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from flask import Flask
-from flask_cors import CORS
-from flask_restful import Api
+from quart import Quart, request
+from quart_cors import cors
+import quart.flask_patch
 from threading import Thread
 import ssl
 import configManager
@@ -14,17 +14,19 @@ from flaskUI.espDevices import Switch
 from flaskUI.Credits import Credits
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
+import hypercorn.asyncio
+from hypercorn.config import Config as HyperConfig
+import os
+import asyncio
+from asyncio import get_event_loop
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
-_ = logManager.logger.get_logger("werkzeug")
-WSGIRequestHandler.protocol_version = "HTTP/1.1"
-app = Flask(__name__, template_folder='flaskUI/templates',static_url_path="/assets", static_folder='flaskUI/assets')
-api = Api(app)
-cors = CORS(app, resources={r"*": {"origins": "*"}})
+hypercorn_logger = logManager.logger.get_logger('hypercorn')
+app = Quart(__name__, template_folder='flaskUI/templates', static_url_path="/assets", static_folder='flaskUI/assets')
+app = cors(app, allow_origin="*")
 
 app.config['SECRET_KEY'] = 'change_this_to_be_secure'
-api.app.config['RESTFUL_JSON'] = {'ensure_ascii': False}
 
 login_manager = flask_login.LoginManager()
 # We can now pass in our app to the login manager
@@ -57,25 +59,58 @@ def request_loader(request):
 
     return user
 
-### Licence/credits
-api.add_resource(Credits, '/licenses/<string:resource>', strict_slashes=False)
-### ESP devices
-api.add_resource(Switch, '/switch')
-### HUE API
-api.add_resource(NewUser, '/api/', strict_slashes=False)
-api.add_resource(ShortConfig, '/api/config', strict_slashes=False)
-api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
-api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
-api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
-api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
-api.add_resource(ElementParamId, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/<string:paramid>/', strict_slashes=False)
+# Replace flask_restful API endpoints with Quart routes
+@app.route('/api/', methods=['POST'])
+async def new_user():
+    return await NewUser().post()
 
-### V2 API
-api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
-#api.add_resource(EventStream, '/eventstream/clip/v2', strict_slashes=False)
-api.add_resource(ClipV2, '/clip/v2/resource', strict_slashes=False)
-api.add_resource(ClipV2Resource, '/clip/v2/resource/<string:resource>', strict_slashes=False)
-api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:resourceid>', strict_slashes=False)
+@app.route('/api/config', methods=['GET'])
+async def short_config():
+    return ShortConfig().get()
+
+@app.route('/api/<string:username>', methods=['GET'])
+async def entire_config(username):
+    return EntireConfig().get(username)
+
+@app.route('/api/<string:username>/<string:resource>', methods=['GET', 'POST'])
+async def resource_elements(username, resource):
+    if request.method == 'GET':
+        return ResourceElements().get(username, resource)
+    elif request.method == 'POST':
+        return ResourceElements().post(username, resource)
+
+@app.route('/api/<string:username>/<string:resource>/<string:resourceid>', methods=['GET', 'PUT', 'DELETE'])
+async def element(username, resource, resourceid):
+    if request.method == 'GET':
+        return Element().get(username, resource, resourceid)
+    elif request.method == 'PUT':
+        return Element().put(username, resource, resourceid)
+    elif request.method == 'DELETE':
+        return Element().delete(username, resource, resourceid)
+
+@app.route('/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', methods=['GET', 'PUT', 'DELETE'])
+async def element_param(username, resource, resourceid, param):
+    if request.method == 'GET':
+        return ElementParam().get(username, resource, resourceid, param)
+    elif request.method == 'PUT':
+        return ElementParam().put(username, resource, resourceid, param)
+    elif request.method == 'DELETE':
+        return ElementParam().delete(username, resource, resourceid, param)
+
+@app.route('/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/<string:paramid>/', methods=['GET', 'PUT'])
+async def element_param_id(username, resource, resourceid, param, paramid):
+    if request.method == 'GET':
+        return ElementParamId().get(username, resource, resourceid, param, paramid)
+    elif request.method == 'PUT':
+        return ElementParamId().put(username, resource, resourceid, param, paramid)
+
+@app.route('/licenses/<string:resource>', methods=['GET'])
+async def credits(resource):
+    return await Credits().get(resource)
+
+@app.route('/switch', methods=['GET'])
+async def switch():
+    return await Switch().get()
 
 ### WEB INTERFACE
 from flaskUI.core.views import core
@@ -88,18 +123,46 @@ app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 app.register_blueprint(stream)
 
-def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
-    ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ctx.load_cert_chain(certfile=CONFIG_PATH + "/cert.pem")
-    ctx.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
-    ctx.set_ciphers('ECDHE-ECDSA-AES128-GCM-SHA256')
-    ctx.set_ecdh_curve('prime256v1')
-    app.run(host=BIND_IP, port=HOST_HTTPS_PORT, ssl_context=ctx)
+def check_cert(CONFIG_PATH):
+    private_key_path = os.path.join(CONFIG_PATH, "private.key")
+    public_crt_path = os.path.join(CONFIG_PATH, "public.crt")
+    cert_pem_path = os.path.join(CONFIG_PATH, "cert.pem")
 
-def runHttp(BIND_IP, HOST_HTTP_PORT):
-    app.run(host=BIND_IP, port=HOST_HTTP_PORT)
+    if not os.path.exists(private_key_path) and not os.path.exists(public_crt_path) and os.path.exists(cert_pem_path):
+        try:
+            with open(cert_pem_path, 'r') as file:
+                lines = file.readlines()
 
-def main():
+            private_key_content = ''.join(lines[:lines.index('-----END PRIVATE KEY-----\n') + 1])
+            certificate_content = ''.join(lines[lines.index('-----BEGIN CERTIFICATE-----\n'):])
+
+            with open(private_key_path, 'w') as file:
+                file.write(private_key_content)
+            logging.info(f"Private key written to {private_key_path}")
+
+            with open(public_crt_path, 'w') as file:
+                file.write(certificate_content)
+            logging.info(f"Public certificate written to {public_crt_path}")
+
+        except Exception as e:
+            logging.error(f"Error processing certificate files: {e}")
+
+async def runHttp(BIND_IP, HOST_HTTP_PORT, HOST_HTTPS_PORT, DISABLE_HTTPS, CONFIG_PATH):
+    config = HyperConfig()
+    config.accesslog = hypercorn_logger
+    config.errorlog = hypercorn_logger
+    config.loglevel = 'DEBUG'
+    config.access_log_format = '%(h)s %(r)s %(s)s'
+    config.insecure_bind = [f"{BIND_IP}:{HOST_HTTP_PORT}"]
+    config.alpn_protocols = ["h2"]
+    if not DISABLE_HTTPS:
+        config.bind = [f"{BIND_IP}:{HOST_HTTPS_PORT}"]
+        config.certfile = CONFIG_PATH + "/public.crt"
+        config.keyfile = CONFIG_PATH + "/private.key"
+
+    await hypercorn.asyncio.serve(app, config)
+
+async def main():
     from services import mqtt, deconz, ssdp, mdns, scheduler, remoteApi, remoteDiscover, entertainment, stateFetch, eventStreamer, homeAssistantWS, updateManager
     ### variables initialization
     BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
@@ -125,12 +188,12 @@ def main():
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
     Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
     Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-    Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
+    loop = get_event_loop()
+    Thread(target=lambda: asyncio.run_coroutine_threadsafe(
+        mdns.mdnsListener(app, HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]), loop)).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
-    if not DISABLE_HTTPS:
-        Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH]).start()
-    runHttp(BIND_IP, HOST_HTTP_PORT)
+    await runHttp(BIND_IP, HOST_HTTP_PORT, HOST_HTTPS_PORT, DISABLE_HTTPS, CONFIG_PATH)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

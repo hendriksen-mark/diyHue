@@ -1,7 +1,7 @@
 from flask_restful import Resource
 
 class Credits(Resource):
-    def get(self, resource):
+    async def get(self, resource):
         if resource == "packages.json":
             response = [
                 {
@@ -176,4 +176,3 @@ class Credits(Resource):
         elif resource == "Repositories.txt":
             response = "https://github.com/diyhue"
             return response
-        

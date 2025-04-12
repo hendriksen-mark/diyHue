@@ -1,5 +1,5 @@
-from flask_wtf import FlaskForm
+from quart_wtf import QuartForm
 from wtforms import SubmitField
 
-class DevicesForm(FlaskForm):
+class DevicesForm(QuartForm):
     submit = SubmitField('Save')

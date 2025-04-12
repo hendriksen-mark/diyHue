@@ -1,7 +1,7 @@
 import configManager
 import logManager
 from flask_restful import Resource
-from flask import request
+from quart import request
 from functions.rules import rulesProcessor
 from sensors.discover import addHueMotionSensor, addHueSwitch, addHueRotarySwitch
 from datetime import datetime, timezone
@@ -28,7 +28,7 @@ def noMotion(sensor):
 
 
 class Switch(Resource):
-    def get(self):
+    async def get(self):
         args = request.args
         if "mac" in args:
             current_time = datetime.now()

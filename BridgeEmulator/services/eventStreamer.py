@@ -1,7 +1,8 @@
 import logManager
-from flask import Response, stream_with_context, Blueprint
+from quart import Response, stream_with_context, Blueprint
 import json
 from time import sleep, time
+import asyncio
 import HueObjects
 
 logging = logManager.logger.get_logger(__name__)
@@ -17,16 +18,16 @@ def messageBroker():
         sleep(0.2)
 
 @stream.route('/eventstream/clip/v2')
-def streamV2Events():
-    def generate():
+async def streamV2Events():
+    async def generate():
         counter = 1000
         yield f": hi\n\n"
-        while counter > 0:  # ensure we stop at some point
+        while counter > 0:
             if len(HueObjects.eventstream) > 0:
                 for index, messages in enumerate(HueObjects.eventstream):
                     yield f"id: {int(time()) }:{index}\ndata: {json.dumps([messages], separators=(',', ':'))}\n\n"
-                sleep(0.2)
-            sleep(0.2)
+                await asyncio.sleep(0.2)
+            await asyncio.sleep(0.2)
             counter -= 1
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream; charset=utf-8')

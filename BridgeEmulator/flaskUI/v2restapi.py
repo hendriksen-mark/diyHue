@@ -6,7 +6,7 @@ import json
 import weakref
 from subprocess import Popen
 from flask_restful import Resource
-from flask import request
+from quart import request
 from services.entertainment import entertainmentService
 from threading import Thread
 from time import sleep
@@ -222,7 +222,7 @@ def v2DiyHueBridge():
     }
 
 class AuthV1(Resource):
-    def get(self):
+    async def get(self):
         authorisation = authorizeV2(request.headers)
         if "user" in authorisation:
             logging.debug("Auth 200")
@@ -234,7 +234,7 @@ class AuthV1(Resource):
 
 
 class ClipV2(Resource):
-    def get(self):
+    async def get(self):
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
@@ -320,7 +320,7 @@ class ClipV2(Resource):
 
 
 class ClipV2Resource(Resource):
-    def get(self, resource):
+    async def get(self, resource):
         # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
@@ -430,7 +430,7 @@ class ClipV2Resource(Resource):
 
         return response
 
-    def post(self, resource):
+    async def post(self, resource):
         # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
@@ -461,7 +461,7 @@ class ClipV2Resource(Resource):
             newObject = Scene.Scene(objCreation)
             bridgeConfig["scenes"][new_object_id] = newObject
             if "actions" in postDict:
-                for action in postDict["actions"]:
+                for action in postDict:
                     if "target" in action:
                         if action["target"]["rtype"] == "light":
                             lightObj = getObject(
@@ -563,7 +563,7 @@ class ClipV2Resource(Resource):
 
 
 class ClipV2ResourceId(Resource):
-    def get(self, resource, resourceid):
+    async def get(self, resource, resourceid):
         # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
@@ -605,7 +605,7 @@ class ClipV2ResourceId(Resource):
         elif resource == "light_level":
             return {"errors": [], "data": [object.getLightlevel()]}
 
-    def put(self, resource, resourceid):
+    async def put(self, resource, resourceid):
         logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
@@ -725,7 +725,7 @@ class ClipV2ResourceId(Resource):
 
         return response
 
-    def delete(self, resource, resourceid):
+    async def delete(self, resource, resourceid):
         # logging.debug(request.headers)
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
