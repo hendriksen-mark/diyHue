@@ -13,7 +13,7 @@ class MDNSListener:
     A class to manage mDNS service registration and updates.
     """
 
-    def __init__(self, ip: str, port: int, modelid: str, bridgeid: str) -> None:
+    def __init__(self, ip: str, port: int, modelid: str, bridgeid: str, mac: str) -> None:
         """
         Initialize the MDNSListener with the given parameters.
         
@@ -22,11 +22,13 @@ class MDNSListener:
             port: Port number of the service
             modelid: Model ID of the service
             bridgeid: Bridge ID of the service
+            mac: MAC address of the service
         """
         self.ip: str = ip
         self.port: int = port
         self.modelid: str = modelid
         self.bridgeid: str = bridgeid
+        self.mac: str = mac
         self.zeroconf: Optional[Zeroconf] = None
         self.info: Optional[ServiceInfo] = None
         self.running: bool = False
@@ -54,11 +56,11 @@ class MDNSListener:
 
             self.info = ServiceInfo(
                 "_hue._tcp.local.",
-                f"DIYHue-{self.bridgeid[-6:]}._hue._tcp.local.",
+                f"DIYHue Bridge - {self.bridgeid[-6:]}._hue._tcp.local.",
                 addresses=[socket.inet_aton(self.ip)],
                 port=self.port,
                 properties=props,
-                server=f"DIYHue-{self.bridgeid}.local."
+                server=f"{self.mac}.local."
             )
             self.zeroconf.register_service(self.info)
             logging.info('<MDNS> service registered successfully')

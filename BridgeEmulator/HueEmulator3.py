@@ -119,9 +119,9 @@ def main():
         Thread(target=remoteDiscover.runRemoteDiscover, args=[bridgeConfig["config"]]).start()
     Thread(target=remoteApi.runRemoteApi, args=[BIND_IP, bridgeConfig["config"]]).start()
     Thread(target=stateFetch.syncWithLights, args=[False]).start()
-    Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-    Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac]).start()
-    Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTP_PORT, "BSB002", bridgeConfig["config"]["bridgeid"]]).start()
+    Thread(target=ssdp.ssdpSearch, args=[HOST_IP, HOST_HTTP_PORT, mac, bridgeConfig["config"]["apiversion"]]).start()
+    Thread(target=ssdp.ssdpBroadcast, args=[HOST_IP, HOST_HTTP_PORT, mac, bridgeConfig["config"]["apiversion"]]).start()
+    Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTPS_PORT, "BSB002", bridgeConfig["config"]["bridgeid"], mac]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
     if not DISABLE_HTTPS:
