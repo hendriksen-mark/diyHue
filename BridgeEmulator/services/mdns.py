@@ -152,7 +152,7 @@ class MDNSListener:
             logging.info(f'<MDNS> no services found for type: {service_type}')
             return []
 
-def mdnsListener(ip: str, port: int, modelid: str, bridgeid: str) -> None:
+def mdnsListener(ip: str, port: int, modelid: str, bridgeid: str, mac: str) -> None:
     """
     Function to start the mDNS listener with the given parameters.
     
@@ -161,8 +161,9 @@ def mdnsListener(ip: str, port: int, modelid: str, bridgeid: str) -> None:
         port: Port number of the service
         modelid: Model ID of the service
         bridgeid: Bridge ID of the service
+        mac: MAC address of the service
     """
-    listener = MDNSListener(ip, port, modelid, bridgeid)
+    listener = MDNSListener(ip, port, modelid, bridgeid, mac)
     try:
         listener.start()
     except Exception as e:
