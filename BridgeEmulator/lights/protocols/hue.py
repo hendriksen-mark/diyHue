@@ -81,14 +81,20 @@ def discover(detectedLights: List[Dict[str, Any]], credentials: Dict[str, str]) 
             lights = response.json()
             for id, light in lights.items():
                 modelid = "LCT015"
-                if light["type"] == "Dimmable light":
+                if light["modelid"].startswith("LWB"):#Dimmable light
                     modelid = "LWB010"
-                elif light["type"] == "Color temperature light":
+                elif light["modelid"].startswith("LTW"):#Color temperature light
                     modelid = "LTW001"
-                elif light["type"] == "On/Off plug-in unit":
+                elif light["modelid"].startswith("LOM"):#On/Off plug-in unit
                     modelid = "LOM001"
-                elif light["type"] == "Color light":
+                elif light["modelid"].startswith("LLC"):#Color light
                     modelid = "LLC010"
+                elif light["modelid"].startswith("LCX"):#Extended color light
+                    modelid = "LCX002"
+                elif light["modelid"].startswith("LCA"):#Color temperature light
+                    modelid = "LCA005"
+                elif light["modelid"].startswith("LST"):#Lightstrip Plus
+                    modelid = "LST002"
                 detectedLights.append({
                     "protocol": "hue", 
                     "name": light["name"], 
@@ -98,7 +104,8 @@ def discover(detectedLights: List[Dict[str, Any]], credentials: Dict[str, str]) 
                         "hueUser": credentials["hueUser"], 
                         "modelid": light["modelid"], 
                         "id": id, 
-                        "uniqueid": light["uniqueid"]
+                        "uniqueid": light["uniqueid"],
+                        **({"points_capable": 5} if modelid == "LCX002" else {})
                     }
                 })
         except requests.RequestException as e:
