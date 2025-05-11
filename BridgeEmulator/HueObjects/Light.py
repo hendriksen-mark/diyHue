@@ -236,7 +236,8 @@ class Light:
                 "status": self.effect,
                 "status_values": ["no_effect", "candle", "fire"]
             }
-            result["gradient"] = {"points": self.state["gradient"]["points"], "points_capable": self.protocol_cfg["points_capable"]}
+            result["gradient"] = {"points": self.state["gradient"]["points"], "points_capable": self.protocol_cfg["points_capable"], "pixel_count": self.protocol_cfg["points_capable"],
+                                  "mode": "interpolated_palette", "mode_values": ["interpolated_palette", "interpolated_palette_mirrored", "random_pixelated"]}
 
         if self.modelid in ["LST002", "LCT001", "LCT015", "LCX002", "915005987201", "LCX004", "LCX006", "LCA005", "LLC010"]:
             colorgamut = lightTypes[self.modelid]["v1_static"]["capabilities"]["control"]["colorgamut"]
