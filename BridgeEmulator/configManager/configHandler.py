@@ -1,7 +1,6 @@
 from configManager import configInit
 from configManager.argumentHandler import parse_arguments, generate_certificate
 import os
-import pathlib
 import subprocess
 import logManager
 import yaml
@@ -50,7 +49,7 @@ class Config:
     yaml_config: Optional[Dict[str, Any]] = None
     argsDict: Dict[str, Any] = parse_arguments()
     configDir: str = argsDict["CONFIG_PATH"]
-    runningDir: str = str(pathlib.Path(__file__)).replace("/configManager/configHandler.py", "")
+    runningDir: str = argsDict["RUNNING_PATH"]
 
     def __init__(self) -> None:
         """
@@ -291,6 +290,8 @@ class Config:
             config = self._set_default_config_values(config)
             config = self._upgrade_config(config)
             self.yaml_config["config"] = config
+            self.yaml_config["config"]["configDir"] = self.configDir
+            self.yaml_config["config"]["runningDir"] = self.runningDir
 
             self._load_lights()
             self._load_groups()

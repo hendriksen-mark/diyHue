@@ -21,6 +21,7 @@ from services import LogWS
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 werkzeug_logger = logManager.logger.get_logger("werkzeug")
+cherrypy_logger = logManager.logger.get_logger("cherrypy")
 WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
 app = Flask(__name__, template_folder='flaskUI/templates', static_url_path="/assets", static_folder='flaskUI/assets')
@@ -125,7 +126,7 @@ def main():
     Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTPS_PORT, "BSB002", bridgeConfig["config"]["bridgeid"], mac]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
-    Thread(target=LogWS.start_websocket_server).start()
+    Thread(target=LogWS.start_ws_server).start()
     if not DISABLE_HTTPS:
         Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH]).start()
     runHttp(BIND_IP, HOST_HTTP_PORT)

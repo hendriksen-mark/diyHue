@@ -1,96 +1,60 @@
-import socket
+from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
+from ws4py.websocket import WebSocket
+import cherrypy
 import threading
-import base64
-import hashlib
 import time
-from pathlib import Path
 import logManager
+import configManager
 
 logging = logManager.logger.get_logger(__name__)
+bridgeConfig = configManager.bridgeConfig.yaml_config
 
-LOG_FILE = str(Path(__file__).parent.parent / "diyhue.log")
+LOG_FILE = str(bridgeConfig["config"]["runningDir"] + "/diyhue.log")
 
-class WebSocketServer:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.clients = []
+class LogWebSocketHandler(WebSocket):
+    def opened(self):
+        self._running = True
+        self._thread = threading.Thread(target=self.tail_log)
+        self._thread.daemon = True
+        self._thread.start()
 
-    def start(self):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket.bind((self.host, self.port))
-        server_socket.listen(5)
-        logging.info(f"WebSocket server running on ws://{self.host}:{self.port}")
+    def closed(self, code, reason=None):
+        self._running = False
 
-        while True:
-            client_socket, address = server_socket.accept()
-            logging.info(f"Connection from {address}")
-            threading.Thread(target=self.handle_client, args=(client_socket,)).start()
-
-    def handle_client(self, client_socket):
+    def tail_log(self):
         try:
-            self.handshake(client_socket)
-            self.clients.append(client_socket)
-            self.stream_logs(client_socket)
+            with open(LOG_FILE) as f:
+                f.seek(0, 2)
+                while self._running:
+                    line = f.readline()
+                    if line:
+                        try:
+                            self.send(line)
+                        except Exception as e:
+                            logging.error(f"Error sending log line: {e}")
+                            break
+                    else:
+                        time.sleep(0.5)
         except Exception as e:
-            logging.error(f"Error handling client: {e}")
-        finally:
-            self.clients.remove(client_socket)
-            client_socket.close()
+            logging.error(f"Error tailing log file: {e}")
 
-    def handshake(self, client_socket):
-        request = client_socket.recv(1024).decode('utf-8')
-        headers = self.parse_headers(request)
-        key = headers.get("Sec-WebSocket-Key")
-        if not key:
-            raise ValueError("Missing Sec-WebSocket-Key in headers")
+cherrypy.config.update({'server.socket_host': '0.0.0.0', 'server.socket_port': 9000})
+WebSocketPlugin(cherrypy.engine).subscribe()
+cherrypy.tools.websocket = WebSocketTool()
 
-        accept_key = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode('utf-8')
-        response = (
-            "HTTP/1.1 101 Switching Protocols\r\n"
-            "Upgrade: websocket\r\n"
-            "Connection: Upgrade\r\n"
-            f"Sec-WebSocket-Accept: {accept_key}\r\n\r\n"
-        )
-        client_socket.send(response.encode('utf-8'))
+class Root(object):
+    @cherrypy.expose
+    def index(self):
+        return "WebSocket log server running."
 
-    def parse_headers(self, request):
-        headers = {}
-        for line in request.split("\r\n")[1:]:
-            if ": " in line:
-                key, value = line.split(": ", 1)
-                headers[key] = value
-        return headers
+    @cherrypy.expose
+    def ws(self):
+        pass  # ws4py handles this
 
-    def stream_logs(self, client_socket):
-        with open(LOG_FILE) as f:
-            f.seek(0, 2)
-            while True:
-                line = f.readline()
-                if line:
-                    self.send_message(client_socket, line)
-                else:
-                    time.sleep(0.5)
-
-    def send_message(self, client_socket, message):
-        try:
-            message = message.encode('utf-8')
-            length = len(message)
-            if length <= 125:
-                frame = b"\x81" + bytes([length]) + message
-            elif length <= 65535:
-                frame = b"\x81\x7e" + length.to_bytes(2, 'big') + message
-            else:
-                frame = b"\x81\x7f" + length.to_bytes(8, 'big') + message
-            client_socket.send(frame)
-        except Exception as e:
-            logging.error(f"Error sending message: {e}")
-            raise
-
-def start_websocket_server():
-    server = WebSocketServer('0.0.0.0', 9000)
-    try:
-        server.start()
-    except KeyboardInterrupt:
-        logging.info("Shutting down WebSocket server.")
+def start_ws_server():
+    cherrypy.quickstart(Root(), '/', config={
+        '/ws': {
+            'tools.websocket.on': True,
+            'tools.websocket.handler_cls': LogWebSocketHandler
+        }
+    })

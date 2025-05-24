@@ -4,6 +4,7 @@ from os import getenv, path
 from functions.network import getIpAddress
 from subprocess import check_output, call
 from typing import Union, Dict
+import pathlib
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -96,6 +97,7 @@ def parse_arguments() -> Dict[str, Union[str, int, bool]]:
     argumentDict["HOST_IP"] = args.ip or get_environment_variable('IP') or argumentDict["BIND_IP"] if argumentDict["BIND_IP"] != '0.0.0.0' else getIpAddress()
     argumentDict["HTTP_PORT"] = args.http_port or get_environment_variable('HTTP_PORT') or 80
     argumentDict["HTTPS_PORT"] = args.https_port or get_environment_variable('HTTPS_PORT') or 443
+    argumentDict["RUNNING_PATH"] = str(pathlib.Path(__file__).parent.parent)
 
     if args.TZ or get_environment_variable('TZ'):
         logging.warn("Time Zone is Deprecated in commandline and not active, please setup via webui")
