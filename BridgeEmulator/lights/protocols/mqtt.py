@@ -27,6 +27,8 @@ def create_payload(lightsData: Dict[str, Any], light: Any) -> Dict[str, Any]:
         if key == "on":
             payload['state'] = "ON" if value else "OFF"
         elif key == "bri":
+            if "brightness_scale" in light.protocol_cfg:
+                value = value * light.protocol_cfg["brightness_scale"] / 254
             payload['brightness'] = value
         elif key == "xy":
             payload['color'] = {'x': value[0], 'y': value[1]}
