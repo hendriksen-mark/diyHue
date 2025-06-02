@@ -77,7 +77,6 @@ api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
 api.add_resource(ClipV2, '/clip/v2/resource', strict_slashes=False)
 api.add_resource(ClipV2Resource, '/clip/v2/resource/<string:resource>', strict_slashes=False)
 api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:resourceid>', strict_slashes=False)
-api.add_resource(ClipV2ResourceId, '/clip/v2//resource/<string:resource>/<string:resourceid>', strict_slashes=False)
 
 ### WEB INTERFACE
 from flaskUI.core.views import core
@@ -89,6 +88,14 @@ app.register_blueprint(core)
 app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 app.register_blueprint(stream)
+
+@app.before_request
+def normalize_path():
+    normalized_path = re.sub(r'/{2,}', '/', request.path)
+    if normalized_path != request.path:
+        # Preserve query string if present
+        qs = ('?' + request.query_string.decode()) if request.query_string else ''
+        return redirect(normalized_path + qs, code=308)  # Permanent redirect
 
 def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
