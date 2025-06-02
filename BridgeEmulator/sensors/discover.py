@@ -76,7 +76,8 @@ def addHueSwitch(uniqueid: str, sensorsType: str) -> Optional[Sensor.Sensor]:
             "modelid": "RWL021" if sensorsType == "ZLLSwitch" else "ZGPSWITCH",
             "manufacturername": "Philips",
             "swversion": "5.45.1.17846" if sensorsType == "ZLLSwitch" else "",
-            "uniqueid": uniqueid
+            "uniqueid": uniqueid,
+            "protocol": "native",
         }
         bridgeConfig["sensors"][new_sensor_id] = Sensor.Sensor(deviceData)
         logging.info(f"Successfully added Hue switch '{deviceData['name']}' with unique ID '{uniqueid}'.")
