@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from flask import Flask
+from flask import Flask, request, redirect
 from flask_cors import CORS
 from flask_restful import Api
 from werkzeug.security import check_password_hash
@@ -17,6 +17,7 @@ from flaskUI.Credits import Credits
 from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
 from services import LogWS
+import re
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -87,6 +88,14 @@ app.register_blueprint(core)
 app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 app.register_blueprint(stream)
+
+@app.before_request
+def normalize_path():
+    normalized_path = re.sub(r'/{2,}', '/', request.path)
+    if normalized_path != request.path:
+        # Preserve query string if present
+        qs = ('?' + request.query_string.decode()) if request.query_string else ''
+        return redirect(normalized_path + qs, code=308)  # Permanent redirect
 
 def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
