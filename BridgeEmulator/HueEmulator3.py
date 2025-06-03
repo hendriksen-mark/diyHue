@@ -76,7 +76,10 @@ api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
 #api.add_resource(EventStream, '/eventstream/clip/v2', strict_slashes=False)
 api.add_resource(ClipV2, '/clip/v2/resource', strict_slashes=False)
 api.add_resource(ClipV2Resource, '/clip/v2/resource/<string:resource>', strict_slashes=False)
-api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:resourceid>', strict_slashes=False)
+api.add_resource(ClipV2ResourceId,
+    '/clip/v2/resource/<string:resource>/<string:resourceid>',
+    '/clip/v2//resource/<string:resource>/<string:resourceid>',
+    strict_slashes=False)
 
 ### WEB INTERFACE
 from flaskUI.core.views import core
@@ -88,14 +91,6 @@ app.register_blueprint(core)
 app.register_blueprint(devices)
 app.register_blueprint(error_pages)
 app.register_blueprint(stream)
-
-@app.before_request
-def normalize_path():
-    # Normalize multiple slashes in the path to a single slash, in-place, no redirect
-    normalized_path = re.sub(r'/{2,}', '/', request.path)
-    if normalized_path != request.path:
-        # Werkzeug's request object is immutable, but environ is not
-        request.environ['PATH_INFO'] = normalized_path
 
 def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
