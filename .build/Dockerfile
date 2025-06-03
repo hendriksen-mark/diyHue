@@ -37,7 +37,7 @@ COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
 COPY ./BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 
 ## Install the web interface
-RUN curl -sL -A "Mozilla/5.0" https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip \
+RUN curl -sL -A "Mozilla/5.0" https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip \
     && if ! unzip -tq diyHueUI.zip > /dev/null; then \
          echo "Downloaded file is not a valid zip. Showing first 20 lines:"; \
          head -20 diyHueUI.zip; \
