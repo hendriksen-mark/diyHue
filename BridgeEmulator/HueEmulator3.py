@@ -76,10 +76,7 @@ api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
 #api.add_resource(EventStream, '/eventstream/clip/v2', strict_slashes=False)
 api.add_resource(ClipV2, '/clip/v2/resource', strict_slashes=False)
 api.add_resource(ClipV2Resource, '/clip/v2/resource/<string:resource>', strict_slashes=False)
-api.add_resource(ClipV2ResourceId,
-    '/clip/v2/resource/<string:resource>/<string:resourceid>',
-    '/clip/v2//resource/<string:resource>/<string:resourceid>',
-    strict_slashes=False)
+api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:resourceid>', strict_slashes=False)
 
 ### WEB INTERFACE
 from flaskUI.core.views import core
