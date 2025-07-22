@@ -40,7 +40,7 @@ class Logger:
 
         # Rotating file handler
         file_handler = logging.handlers.RotatingFileHandler(
-        filename=str(Path(__file__).parent.parent / 'diyhue.log'), maxBytes=10000000, backupCount=7)  # Ensure consistent path
+            filename=str(Path(__file__).parent.parent / 'diyhue.log'), maxBytes=10000000, backupCount=7)  # Ensure consistent path
         file_handler.setFormatter(self._get_log_format())
         file_handler.setLevel(logging.DEBUG)
         file_handler.addFilter(lambda record: record.levelno <= logging.CRITICAL)

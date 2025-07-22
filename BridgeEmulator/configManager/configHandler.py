@@ -8,7 +8,9 @@ import uuid
 import weakref
 from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
+import glob
+import re
 
 try:
     from time import tzset
@@ -277,7 +279,7 @@ class Config:
         try:
             config = self._load_yaml_file("config.yaml", {})
             if "timezone" not in config:
-                logging.warn("No Time Zone in config, please set Time Zone in webui, default to Europe/London")
+                logging.warning("No Time Zone in config, please set Time Zone in webui, default to Europe/London")
                 config["timezone"] = "Europe/London"
             os.environ['TZ'] = config["timezone"]
             if tzset is not None:
@@ -398,19 +400,24 @@ class Config:
         Returns:
             str: The path to the tar file containing the log files.
         """
-        subprocess.run(f'tar -cvf {self.configDir}/diyhue_log.tar {self.runningDir}/*.log*', shell=True, check=True)
+        debug_logs_dir = self.create_debug_logs()
+        log_path = f"{debug_logs_dir}/*.log*"
+        subprocess.run(f'tar -cvf {self.configDir}/diyhue_log.tar {log_path}', shell=True, check=True)
         return f"{self.configDir}/diyhue_log.tar"
 
     def download_debug(self) -> str:
         """
         Download the debug information as a tar file.
 
+        Args:
+            include_debug_logs (bool): Whether to include debug logs with API keys replaced by names.
+
         Returns:
             str: The path to the tar file containing the debug information.
         """
         debug = deepcopy(self.yaml_config["config"])
         debug["whitelist"] = "privately"
-        debug["apiUsers"] = "privately"
+        debug["apiUsers"] = [user_obj.name for user_obj in self.yaml_config["apiUsers"].values()]
         debug["Hue Essentials key"] = "privately"
         debug["users"] = "privately"
         if debug["mqtt"]["enabled"] or "mqttPassword" in debug["mqtt"]:
@@ -436,8 +443,12 @@ class Config:
         info["arguments"] = {k: str(v) for k, v in self.argsDict.items()}
         _write_yaml(f"{self.configDir}/config_debug.yaml", debug)
         _write_yaml(f"{self.configDir}/system_info.yaml", info)
-        subprocess.run(f'tar --exclude=\'config.yaml\' -cvf {self.configDir}/config_debug.tar {self.configDir}/*.yaml {self.runningDir}/*.log* ', shell=True, capture_output=True, text=True)
-        subprocess.run(f'rm -r {self.configDir}/config_debug.yaml', check=True)
+
+        debug_logs_dir = self.create_debug_logs()
+        log_path = f"{debug_logs_dir}/*.log*"
+        
+        subprocess.run(f'tar --exclude=\'config.yaml\' -cvf {self.configDir}/config_debug.tar {self.configDir}/*.yaml {log_path} ', shell=True, capture_output=True, text=True)
+        subprocess.run(f'rm -r {self.configDir}/config_debug.yaml', shell=True, capture_output=True, text=True)
         return f"{self.configDir}/config_debug.tar"
 
     def write_args(self, args: Dict[str, Any]) -> None:
@@ -454,3 +465,74 @@ class Config:
         Generate a new security key for the configuration.
         """
         self.yaml_config = configInit.generate_security_key(self.yaml_config)
+
+    def create_debug_logs(self) -> str:
+        """
+        Create debug versions of log files with API user keys replaced by names.
+
+        Scans all log files in {self.runningDir}/*.log* for API user keys from 
+        self.yaml_config["apiUsers"] and replaces them with the corresponding 
+        user names, then creates new debug log files with the suffix '-debug'.
+
+        Returns:
+            str: The directory path containing the debug log files.
+        """
+        debug_dir = os.path.join(self.configDir, 'debug_logs')
+        if not os.path.exists(debug_dir):
+            os.makedirs(debug_dir)
+
+        # Get all log files
+        log_pattern = os.path.join(self.runningDir, '*.log*')
+        log_files = glob.glob(log_pattern)
+
+        if not log_files:
+            logging.warning(f"No log files found in {self.runningDir}")
+            return debug_dir
+
+        # Create mapping of API keys to names
+        api_key_map = {}
+        for key, user_obj in self.yaml_config["apiUsers"].items():
+            api_key_map[key] = user_obj.name
+
+        logging.info(f"Processing {len(log_files)} log files for debug output")
+
+        for log_file in log_files:
+            try:
+                # Read the original log file
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+
+                # Replace API keys with names
+                modified_content = content
+                replacements_made = 0
+
+                for api_key, user_name in api_key_map.items():
+                    if api_key in modified_content:
+                        # Use word boundaries to avoid partial matches
+                        pattern = re.escape(api_key)
+                        replacement_count = len(re.findall(pattern, modified_content))
+                        modified_content = re.sub(pattern, user_name, modified_content)
+                        replacements_made += replacement_count
+                        if replacement_count > 0:
+                            logging.debug(f"Replaced {replacement_count} occurrences of '{user_name}' in {os.path.basename(log_file)}")
+
+                # Create debug log file name
+                base_name = os.path.basename(log_file)
+                if '.' in base_name:
+                    name_parts = base_name.rsplit('.', 1)
+                    debug_name = f"{name_parts[0]}-debug.{name_parts[1]}"
+                else:
+                    debug_name = f"{base_name}-debug"
+
+                debug_file_path = os.path.join(debug_dir, debug_name)
+
+                # Write the debug log file
+                with open(debug_file_path, 'w', encoding='utf-8') as f:
+                    f.write(modified_content)
+
+                logging.info(f"Created debug log: {debug_name} ({replacements_made} API key replacements)")
+                
+            except Exception as e:
+                logging.error(f"Error processing log file {log_file}: {str(e)}")
+        
+        return debug_dir

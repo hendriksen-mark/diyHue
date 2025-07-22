@@ -15,6 +15,7 @@ def ssdpSearch(ip: str, port: int, mac: str, api: str) -> None:
         ip (str): The IP address of the device.
         port (int): The port number of the device.
         mac (str): The MAC address of the device.
+        api (str): The API version of the device.
     """
     SSDP_ADDR = '239.255.255.250'
     SSDP_PORT = 1900

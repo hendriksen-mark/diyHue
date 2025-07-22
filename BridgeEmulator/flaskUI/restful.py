@@ -5,7 +5,7 @@ import weakref
 import uuid
 import json
 import os
-from subprocess import Popen
+from subprocess import Popen, run
 from threading import Thread
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
@@ -17,7 +17,6 @@ from services.entertainment import entertainmentService
 from services.updateManager import githubCheck, versionCheck, githubInstall
 from werkzeug.security import generate_password_hash
 from lights.light_types import lightTypes
-import subprocess
 
 try:
     from time import tzset
@@ -160,8 +159,8 @@ class ResourceElements(Resource):
                             "machine": uname.machine,
                             "os_version": uname.version,
                             "os_release": uname.release,
-                            "diyhue": subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.strip(),
-                            "webui": subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.strip()
+                            "diyhue": run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.strip(),
+                            "webui": run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.strip()
                         }
                     response["timezones"] = capabilities()["timezones"]["values"]
                 return response
