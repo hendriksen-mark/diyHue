@@ -87,7 +87,7 @@ def parse_arguments() -> Dict[str, Union[str, int, bool]]:
     args = ap.parse_args()
 
     if args.scan_on_host_ip:
-        logging.warn("scan_on_host_ip is Deprecated in commandline and not active, please setup via webui")
+        logging.warning("scan_on_host_ip is Deprecated in commandline and not active, please setup via webui")
 
     argumentDict["noLinkButton"] = args.no_link_button
     argumentDict["noServeHttps"] = args.no_serve_https
@@ -100,7 +100,7 @@ def parse_arguments() -> Dict[str, Union[str, int, bool]]:
     argumentDict["RUNNING_PATH"] = str(pathlib.Path(__file__).parent.parent)
 
     if args.TZ or get_environment_variable('TZ'):
-        logging.warn("Time Zone is Deprecated in commandline and not active, please setup via webui")
+        logging.warning("Time Zone is Deprecated in commandline and not active, please setup via webui")
 
 
     logging.info("Using Host %s:%s" % (argumentDict["HOST_IP"], argumentDict["HTTP_PORT"]))
@@ -129,13 +129,13 @@ def parse_arguments() -> Dict[str, Union[str, int, bool]]:
         logging.info(f"Host MAC given as {mac}")
 
     if any([args.ip_range, get_environment_variable('IP_RANGE'), args.sub_ip_range, get_environment_variable('IP_RANGE_START'), get_environment_variable('IP_RANGE_END'), get_environment_variable('SUB_IP_RANGE'), get_environment_variable('SUB_IP_RANGE_START'), get_environment_variable('SUB_IP_RANGE_END')]):
-        logging.warn("IP range is Deprecated in commandline and not active, please setup via webui")
+        logging.warning("IP range is Deprecated in commandline and not active, please setup via webui")
 
     if args.deconz or get_environment_variable('DECONZ'):
-        logging.warn("DECONZ is Deprecated in commandline and not active, please setup via webui")
+        logging.warning("DECONZ is Deprecated in commandline and not active, please setup via webui")
 
     if args.disable_online_discover or get_environment_variable('disableonlinediscover'):
-        logging.warn("disableonlinediscover is Deprecated in commandline and not active, please setup via webui")
+        logging.warning("disableonlinediscover is Deprecated in commandline and not active, please setup via webui")
 
     if argumentDict['noServeHttps']:
         logging.info("HTTPS Port Disabled")
