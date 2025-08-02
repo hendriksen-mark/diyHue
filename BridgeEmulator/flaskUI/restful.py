@@ -9,7 +9,7 @@ from subprocess import Popen, run
 from threading import Thread
 from datetime import datetime, timezone
 from lights.discover import scanForLights, manualAddLight
-from functions.core import capabilities, staticConfig, nextFreeId
+from functions.core import capabilities, staticConfig, nextFreeId, get_pi_temp
 from flask_restful import Resource
 from flask import request
 from functions.rules import rulesProcessor
@@ -154,13 +154,18 @@ class ResourceElements(Resource):
                     uname = os.uname()
                     response["config"] = buildConfig()
                     response["config"].update(bridgeConfig["config"])
+
+                    stat_flag = "-c %y" if uname.sysname == "Linux" else "-f %Sm"
+                    server_cmd = f"stat {stat_flag} {configManager.bridgeConfig.runningDir}/HueEmulator3.py"
+                    webui_cmd = f"stat {stat_flag} {configManager.bridgeConfig.runningDir}/flaskUI/templates/index.html"
                     response["info"] = {
                             "sysname": uname.sysname,
                             "machine": uname.machine,
                             "os_version": uname.version,
                             "os_release": uname.release,
-                            "diyhue": run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.strip(),
-                            "webui": run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.strip()
+                            "diyhue": run(server_cmd, shell=True, capture_output=True, text=True).stdout.strip(),
+                            "webui": run(webui_cmd, shell=True, capture_output=True, text=True).stdout.strip(),
+                            "pi_temp": get_pi_temp() if uname.sysname == "Linux" else "Unsupported OS"
                         }
                     response["timezones"] = capabilities()["timezones"]["values"]
                 return response

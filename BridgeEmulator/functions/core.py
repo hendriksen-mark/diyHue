@@ -1,5 +1,6 @@
 import zoneinfo
 from typing import Dict, Any
+import subprocess
 
 def nextFreeId(bridgeConfig: Dict[str, Any], element: str) -> str:
     """
@@ -16,6 +17,16 @@ def nextFreeId(bridgeConfig: Dict[str, Any], element: str) -> str:
     while str(i) in bridgeConfig[element]:
         i += 1
     return str(i)
+
+def get_pi_temp() -> float:
+    """Read the CPU temperature and return it as a float in degrees Celsius."""
+    try:
+        output: subprocess.CompletedProcess = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, check=True)
+        temp_str: str = output.stdout.decode()
+        return float(temp_str.split('=')[1].split('\'')[0])
+    except (IndexError, ValueError, subprocess.CalledProcessError, FileNotFoundError):
+        raise RuntimeError('Could not get temperature')
+
 
 def staticConfig() -> Dict[str, Any]:
     """
