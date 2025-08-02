@@ -40,9 +40,10 @@ def githubCheck() -> None:
     Check for updates on GitHub for both the main diyHue repository and the UI repository.
     Update the bridge configuration based on the availability of updates.
     """
+    branch = bridgeConfig['config']['system']['branch']
     creation_time = get_file_creation_time("HueEmulator3.py")
     # publish_time = get_github_publish_time("https://api.github.com/repos/diyhue/diyhue/branches/master")
-    publish_time = get_github_publish_time("https://api.github.com/repos/hendriksen-mark/diyhue/branches/master")
+    publish_time = get_github_publish_time(f"https://api.github.com/repos/hendriksen-mark/diyhue/branches/{branch}")
 
     logging.debug(f"creation_time diyHue : {creation_time}")
     logging.debug(f"publish_time  diyHue : {publish_time}")
