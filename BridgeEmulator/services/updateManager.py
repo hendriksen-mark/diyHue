@@ -5,6 +5,7 @@ from typing import List
 
 import configManager
 import logManager
+from .github_installer import install_github_updates
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
@@ -40,8 +41,9 @@ def githubCheck() -> None:
     Update the bridge configuration based on the availability of updates.
     """
     creation_time = get_file_creation_time("HueEmulator3.py")
-    publish_time = get_github_publish_time("https://api.github.com/repos/diyhue/diyhue/branches/master")
-    
+    # publish_time = get_github_publish_time("https://api.github.com/repos/diyhue/diyhue/branches/master")
+    publish_time = get_github_publish_time("https://api.github.com/repos/hendriksen-mark/diyhue/branches/master")
+
     logging.debug(f"creation_time diyHue : {creation_time}")
     logging.debug(f"publish_time  diyHue : {publish_time}")
 
@@ -66,8 +68,9 @@ def githubUICheck() -> bool:
         bool: True if there is a new update available, False otherwise.
     """
     creation_time = get_file_creation_time("flaskUI/templates/index.html")
-    publish_time = get_github_publish_time("https://api.github.com/repos/diyhue/diyHueUI/releases/latest")
-    
+    # publish_time = get_github_publish_time("https://api.github.com/repos/diyhue/diyHueUI/releases/latest")
+    publish_time = get_github_publish_time("https://api.github.com/repos/hendriksen-mark/diyHueUI/releases/latest")
+
     logging.debug(f"creation_time UI : {creation_time}")
     logging.debug(f"publish_time  UI : {publish_time}")
 
@@ -147,8 +150,23 @@ def githubInstall() -> None:
     Install updates from GitHub if they are ready to be installed.
     """
     if bridgeConfig["config"]["swupdate2"]["state"] in ["allreadytoinstall", "anyreadytoinstall"]:
-        subprocess.Popen(f"sh githubInstall.sh {bridgeConfig['config']['ipaddress']} {bridgeConfig['config']['swupdate2']['state']}", shell=True, close_fds=True)
-        bridgeConfig["config"]["swupdate2"]["state"] = "installing"
+        configManager.bridgeConfig.save_config()
+        state = bridgeConfig['config']['swupdate2']['state']
+        branch = bridgeConfig['config']['system']['branch']
+        try:
+            success = install_github_updates(state, branch)
+            if success:
+                logging.info("Update installation successful, restarting server")
+                bridgeConfig["config"]["swupdate2"]["state"] = "noupdates"
+                bridgeConfig["config"]["swupdate2"]["install"] = False
+                configManager.bridgeConfig.restart_python()
+                # Code after restart_python() will not execute
+            else:
+                logging.error("Update installation failed")
+                bridgeConfig["config"]["swupdate2"]["state"] = "unknown"
+        except Exception as e:
+            logging.error(f"Error during update installation: {e}")
+            bridgeConfig["config"]["swupdate2"]["state"] = "unknown"
 
 def startupCheck() -> None:
     """
