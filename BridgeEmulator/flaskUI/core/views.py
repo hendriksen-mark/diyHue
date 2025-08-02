@@ -20,32 +20,6 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 core = Blueprint('core', __name__)
 
-def save_bridge_config(backup: bool = False) -> str:
-    """
-    Save the bridge configuration.
-
-    Args:
-        backup (bool): Whether to create a backup of the configuration.
-
-    Returns:
-        str: A message indicating whether the configuration was saved or backed up.
-    """
-    configManager.bridgeConfig.save_config(backup=backup)
-    return "backup config\n" if backup else "config saved\n"
-
-def restart_python() -> None:
-    """
-    Restart the Python process.
-
-    Args:
-        None
-
-    Returns:
-        None
-    """
-    logging.info(f"restart {sys.executable} with args: {sys.argv}")
-    os.execl(sys.executable, sys.executable, *sys.argv)
-
 @core.route('/')
 @flask_login.login_required
 def index() -> str:
@@ -168,7 +142,9 @@ def save_config() -> str:
     Returns:
         str: A message indicating whether the configuration was saved or backed up.
     """
-    return save_bridge_config(backup=request.args.get('backup', type=str) == "True")
+    backup = request.args.get('backup', type=str) == "True"
+    configManager.bridgeConfig.save_config(backup=backup)
+    return "backup config\n" if backup else "config saved\n"
 
 @core.route('/reset_config')
 @flask_login.login_required
@@ -198,7 +174,7 @@ def remove_cert() -> str:
         str: A message indicating that the certificate was removed and the process was restarted.
     """
     configManager.bridgeConfig.remove_cert()
-    restart_python()
+    configManager.bridgeConfig.restart_python()
     return "Certificate removed, restart python with args"
 
 @core.route('/restore_config')
@@ -270,7 +246,7 @@ def restart() -> str:
     Returns:
         str: A message indicating that the process was restarted.
     """
-    restart_python()
+    configManager.bridgeConfig.restart_python()
     return "restart python with args"
 
 @core.route('/info')

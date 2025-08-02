@@ -11,6 +11,7 @@ from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser,
 from typing import Any, Dict, Optional
 import glob
 import re
+import sys
 
 try:
     from time import tzset
@@ -112,7 +113,8 @@ class Config:
                 "lastchange": "2020-12-13T10:30:15",
                 "state": "noupdates",
                 "install": False
-            }
+            },
+            "branch": "main"
         }
         for key, value in defaults.items():
             if key not in config:
@@ -537,3 +539,24 @@ class Config:
                 logging.error(f"Error processing log file {log_file}: {str(e)}")
         
         return debug_dir
+    def restart_python(self) -> None:
+        """
+        Restart the Python process or systemd service.
+        """
+        import signal
+        try:
+            logging.info("restart using systemctl")
+            subprocess.run(['sudo', 'systemctl', 'restart', 'raspberry_extension_server.service'], check=True)
+            return  # Should not reach here if systemctl works
+        except subprocess.CalledProcessError as e:
+            # If the process was killed by SIGTERM, do nothing (systemd is restarting us)
+            if e.returncode == -signal.SIGTERM:
+                logging.info("Process terminated by SIGTERM (expected during systemctl restart). Not falling back to os.execl.")
+                sys.exit(0)
+            logging.error(f"systemctl restart failed: {e}, falling back to os.execl")
+            logging.info(f"restart {sys.executable} with args: {sys.argv}")
+            os.execl(sys.executable, sys.executable, *sys.argv)
+        except Exception as e:
+            logging.error(f"systemctl restart failed: {e}, falling back to os.execl")
+            logging.info(f"restart {sys.executable} with args: {sys.argv}")
+            os.execl(sys.executable, sys.executable, *sys.argv)
