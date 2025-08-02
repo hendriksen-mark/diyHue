@@ -20,6 +20,15 @@ def nextFreeId(bridgeConfig: Dict[str, Any], element: str) -> str:
 
 def get_pi_temp() -> float:
     """Read the CPU temperature and return it as a float in degrees Celsius."""
+    # Try thermal zone first (works in Docker containers)
+    try:
+        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            temp_millidegrees = int(f.read().strip())
+            return temp_millidegrees / 1000.0
+    except (FileNotFoundError, ValueError, PermissionError):
+        pass
+    
+    # Fall back to vcgencmd (works on Raspberry Pi host)
     try:
         output: subprocess.CompletedProcess = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, check=True)
         temp_str: str = output.stdout.decode()
