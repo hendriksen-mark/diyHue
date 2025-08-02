@@ -403,6 +403,7 @@ class Config:
         debug_logs_dir = self.create_debug_logs()
         log_path = f"{debug_logs_dir}/*.log*"
         subprocess.run(f'tar -cvf {self.configDir}/diyhue_log.tar {log_path}', shell=True, check=True)
+        subprocess.run(f'rm -r {debug_logs_dir}', shell=True, check=True)
         return f"{self.configDir}/diyhue_log.tar"
 
     def download_debug(self) -> str:
@@ -448,7 +449,7 @@ class Config:
         log_path = f"{debug_logs_dir}/*.log*"
         
         subprocess.run(f'tar --exclude=\'config.yaml\' -cvf {self.configDir}/config_debug.tar {self.configDir}/*.yaml {log_path} ', shell=True, capture_output=True, text=True)
-        subprocess.run(f'rm -r {self.configDir}/config_debug.yaml', shell=True, capture_output=True, text=True)
+        subprocess.run(f'rm -r {self.configDir}/config_debug.yaml {debug_logs_dir}', shell=True, capture_output=True, text=True)
         return f"{self.configDir}/config_debug.tar"
 
     def write_args(self, args: Dict[str, Any]) -> None:
