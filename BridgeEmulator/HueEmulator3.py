@@ -1,92 +1,19 @@
 #!/usr/bin/env python
 from flask import Flask
-from flask_cors import CORS
-from flask_restful import Api
-from werkzeug.security import check_password_hash
 from threading import Thread
 import ssl
-import os
 import configManager
 import logManager
-import flask_login
-from flaskUI.core import User  # dummy import for flask_login module
-from flaskUI.restful import NewUser, ShortConfig, EntireConfig, ResourceElements, Element, ElementParam, ElementParamId
-from flaskUI.v2restapi import AuthV1, ClipV2, ClipV2Resource, ClipV2ResourceId
-from flaskUI.espDevices import Switch
-from flaskUI.Credits import Credits
-from werkzeug.serving import WSGIRequestHandler
 from functions.daylightSensor import daylightSensor
 from services import LogWS
+from flaskUI import create_app
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 werkzeug_logger = logManager.logger.get_logger("werkzeug")
 cherrypy_logger = logManager.logger.get_logger("cherrypy")
-WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
-app = Flask(__name__, template_folder='flaskUI/templates', static_url_path="/assets", static_folder='flaskUI/assets')
-api = Api(app)
-cors = CORS(app, resources={r"*": {"origins": "*"}})
-
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(24))  # Load from environment variable or generate a random key
-api.app.config['RESTFUL_JSON'] = {'ensure_ascii': False}
-
-login_manager = flask_login.LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "core.login"
-
-@login_manager.user_loader
-def user_loader(email):
-    if email not in bridgeConfig["config"]["users"]:
-        return None
-    user = User()
-    user.id = email
-    return user
-
-@login_manager.request_loader
-def request_loader(request):
-    email = request.form.get('email')
-    if email not in bridgeConfig["config"]["users"]:
-        return None
-    user = User()
-    user.id = email
-    logging.info(f"Authentication attempt for user: {email}")
-    user.is_authenticated = compare_passwords(request.form['password'], bridgeConfig["config"]["users"][email]["password"])
-    return user
-
-def compare_passwords(input_password, stored_password):
-    return check_password_hash(stored_password, input_password)
-
-### Licence/credits
-api.add_resource(Credits, '/licenses/<string:resource>', strict_slashes=False)
-### ESP devices
-api.add_resource(Switch, '/switch')
-### HUE API
-api.add_resource(NewUser, '/api/', strict_slashes=False)
-api.add_resource(ShortConfig, '/api/config', strict_slashes=False)
-api.add_resource(EntireConfig, '/api/<string:username>', strict_slashes=False)
-api.add_resource(ResourceElements, '/api/<string:username>/<string:resource>', strict_slashes=False)
-api.add_resource(Element, '/api/<string:username>/<string:resource>/<string:resourceid>', strict_slashes=False)
-api.add_resource(ElementParam, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/', strict_slashes=False)
-api.add_resource(ElementParamId, '/api/<string:username>/<string:resource>/<string:resourceid>/<string:param>/<string:paramid>/', strict_slashes=False)
-
-### V2 API
-api.add_resource(AuthV1, '/auth/v1', strict_slashes=False)
-#api.add_resource(EventStream, '/eventstream/clip/v2', strict_slashes=False)
-api.add_resource(ClipV2, '/clip/v2/resource', strict_slashes=False)
-api.add_resource(ClipV2Resource, '/clip/v2/resource/<string:resource>', strict_slashes=False)
-api.add_resource(ClipV2ResourceId, '/clip/v2/resource/<string:resource>/<string:resourceid>', strict_slashes=False)
-
-### WEB INTERFACE
-from flaskUI.core.views import core
-from flaskUI.devices.views import devices
-from flaskUI.error_pages.handlers import error_pages
-from services.eventStreamer import stream
-
-app.register_blueprint(core)
-app.register_blueprint(devices)
-app.register_blueprint(error_pages)
-app.register_blueprint(stream)
+app: Flask = create_app(bridgeConfig)
 
 def runHttps(BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH):
     ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
