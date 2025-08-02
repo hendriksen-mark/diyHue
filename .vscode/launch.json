@@ -20,7 +20,25 @@
         "XXX.XXX.XXX.XXX"
       ],
       "console": "integratedTerminal",
-      "sudo": true,
+      "sudo": true
+    },
+    {
+      "name": "install own ui",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "sh ${workspaceFolder}/install_ui.sh own"
+    },
+    {
+      "name": "install diyhue ui",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "sh ${workspaceFolder}/install_ui.sh diyhue"
+    },
+    {
+      "name": "build docker",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "sh ${workspaceFolder}/build_docker.sh"
     }
   ]
 }
