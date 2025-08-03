@@ -540,6 +540,33 @@ class Config:
 
         return debug_dir
 
+    def try_systemctl_restart(self) -> bool:
+        """Try to restart using systemctl with appropriate permissions."""
+        # In Docker, try without sudo first (often running as root)
+        commands_to_try = [
+            ['systemctl', 'restart', 'hue-emulator.service'],
+            ['sudo', 'systemctl', 'restart', 'hue-emulator.service']
+        ]
+
+        for cmd in commands_to_try:
+            try:
+                restart_result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                if restart_result.returncode == 0:
+                    logging.info(f"diyHue restarted successfully using: {' '.join(cmd)}")
+                    return True
+                else:
+                    logging.debug(f"Command '{' '.join(cmd)}' failed: {restart_result.stderr}")
+            except FileNotFoundError:
+                logging.debug(f"Command not found: {cmd[0]}")
+                continue
+            except subprocess.TimeoutExpired:
+                logging.warning(f"Command '{' '.join(cmd)}' timed out")
+                continue
+            except Exception as e:
+                logging.debug(f"Error with command '{' '.join(cmd)}': {e}")
+                continue
+        return False
+
     def restart_python(self) -> None:
         """
         Restart the Python process or systemd service.
@@ -547,8 +574,8 @@ class Config:
         import signal
         try:
             logging.info("restart using systemctl")
-            subprocess.run(['sudo', 'systemctl', 'restart', 'hue-emulator.service'], check=True)
-            return  # Should not reach here if systemctl works
+            if self.try_systemctl_restart():
+                return  # Successfully restarted
         except subprocess.CalledProcessError as e:
             # If the process was killed by SIGTERM, do nothing (systemd is restarting us)
             if e.returncode == -signal.SIGTERM:
