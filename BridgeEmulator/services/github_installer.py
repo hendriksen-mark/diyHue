@@ -19,6 +19,7 @@ class GitHubInstaller:
     
     def __init__(self):
         self.server_path = Path(configManager.bridgeConfig.runningDir)
+        self.config_path = Path(configManager.bridgeConfig.configDir)
         self.temp_dir = None
         
     def install_updates(self, state: str, branch: str) -> bool:
@@ -94,11 +95,10 @@ class GitHubInstaller:
                 logging.error(f"Failed to update Python dependencies from {server_source / 'requirements.txt'}")
                 return False
 
-            # Remove old local logManager directory if it exists (now a package)
-            old_logmanager_path = self.server_path / "logManager"
-            if old_logmanager_path.exists():
-                shutil.rmtree(old_logmanager_path)
-                logging.info("Removed old local logManager directory (now using package)")
+            # Make backup and clean install
+            if not self._backup_and_clean_install():
+                logging.error("Failed to backup and clean install")
+                return False
 
             # Copy server files
             files_to_copy = [
@@ -248,7 +248,66 @@ class GitHubInstaller:
         except Exception as e:
             logging.error(f"Unexpected error extracting {zip_path} to {extract_to}: {e}")
             return False
-    
+
+    def _backup_and_clean_install(self) -> bool:
+        """
+        Make a temporary backup of config folder and log files, 
+        remove the running folder for fresh install, then restore backups.
+        """
+        try:
+            backup_dir = self.temp_dir / "hue-emulator_backup"
+            log_backup_dir = self.temp_dir / "log_backup"
+
+            logging.info("Making backup of config and log files...")
+
+            # Backup config folder
+            if self.config_path.exists():
+                shutil.copytree(self.config_path, backup_dir)
+                logging.debug(f"Backed up config folder to {backup_dir}")
+            else:
+                logging.warning(f"Config folder not found at {self.config_path}")
+
+            # Backup log files
+            log_backup_dir.mkdir(exist_ok=True)
+            log_files = list(self.server_path.glob("*.log*"))
+            for log_file in log_files:
+                if log_file.is_file():
+                    shutil.copy2(log_file, log_backup_dir)
+                    logging.debug(f"Backed up log file {log_file.name}")
+
+            if log_files:
+                logging.debug(f"Backed up {len(log_files)} log files to {log_backup_dir}")
+            else:
+                logging.debug("No log files found to backup")
+
+            # Remove all contents of running folder for fresh install
+            logging.info("Removing existing installation for fresh install...")
+            for item in self.server_path.iterdir():
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+            logging.debug("Removed all existing files from server directory")
+
+            # Restore config folder
+            if backup_dir.exists():
+                shutil.copytree(backup_dir, self.config_path)
+                logging.debug("Restored config folder")
+
+            # Restore log files
+            if log_backup_dir.exists():
+                for log_file in log_backup_dir.iterdir():
+                    if log_file.is_file():
+                        shutil.copy2(log_file, self.server_path)
+                        logging.debug(f"Restored log file {log_file.name}")
+
+            logging.info("Backup and clean install completed successfully")
+            return True
+
+        except Exception as e:
+            logging.error(f"Error during backup and clean install: {e}")
+            return False
+
     def _update_python_dependencies(self, requirements_path: Path) -> bool:
         """Update pip and install requirements."""
         try:
