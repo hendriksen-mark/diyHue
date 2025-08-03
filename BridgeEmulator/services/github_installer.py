@@ -91,7 +91,13 @@ class GitHubInstaller:
             if not self._update_python_dependencies(server_source / "requirements.txt"):
                 logging.error(f"Failed to update Python dependencies from {server_source / 'requirements.txt'}")
                 return False
-            
+
+            # Remove old local logManager directory if it exists (now a package)
+            old_logmanager_path = self.server_path / "logManager"
+            if old_logmanager_path.exists():
+                shutil.rmtree(old_logmanager_path)
+                logging.info("Removed old local logManager directory (now using package)")
+
             # Copy server files
             files_to_copy = [
                 "BridgeEmulator/flaskUI",
