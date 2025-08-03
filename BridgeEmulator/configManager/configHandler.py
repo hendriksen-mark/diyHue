@@ -540,9 +540,23 @@ class Config:
 
         return debug_dir
 
+    def is_docker_environment(self) -> bool:
+        """Check if we're running in a Docker container."""
+        try:
+            with open('/proc/1/cgroup', 'r') as f:
+                return 'docker' in f.read() or 'containerd' in f.read()
+        except FileNotFoundError:
+            # Check for .dockerenv file as alternative method
+            return os.path.exists('/.dockerenv')
+
     def try_systemctl_restart(self) -> bool:
         """Try to restart using systemctl with appropriate permissions."""
-        # In Docker, try without sudo first (often running as root)
+        # Check if we're in Docker first
+        if self.is_docker_environment():
+            logging.info("Docker environment detected, systemctl not available")
+            return False
+            
+        # In regular environments, try systemctl commands
         commands_to_try = [
             ['systemctl', 'restart', 'hue-emulator.service'],
             ['sudo', 'systemctl', 'restart', 'hue-emulator.service']
@@ -572,8 +586,16 @@ class Config:
         Restart the Python process or systemd service.
         """
         import signal
+        
+        # Check if we're in Docker environment
+        if self.is_docker_environment():
+            logging.info("Docker environment detected, restarting via os.execl")
+            logging.info(f"restart {sys.executable} with args: {sys.argv}")
+            os.execl(sys.executable, sys.executable, *sys.argv)
+            return
+        
         try:
-            logging.info("restart using systemctl")
+            logging.info("Attempting restart using systemctl")
             if self.try_systemctl_restart():
                 return  # Successfully restarted
             else:
