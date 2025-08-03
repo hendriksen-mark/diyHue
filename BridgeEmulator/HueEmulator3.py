@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+import logManager
+logManager.logger.enable_file_logging()
 from flask import Flask
 from threading import Thread
 import ssl
 import configManager
-import logManager
 from functions.daylightSensor import daylightSensor
 from services import LogWS
 from flaskUI import create_app
