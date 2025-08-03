@@ -2,6 +2,8 @@ import requests
 import subprocess
 from datetime import datetime, timezone
 from typing import List
+import os
+from pathlib import Path
 
 import configManager
 import logManager
@@ -88,9 +90,24 @@ def get_file_creation_time(filepath: str) -> str:
         str: The creation time of the file in the format "%Y-%m-%d %H".
     """
     try:
-        creation_time = subprocess.run(f"stat -c %y {filepath}", shell=True, capture_output=True, text=True)
-        creation_time_arg1 = creation_time.stdout.replace(".", " ").split(" ") if creation_time.stdout else "2999-01-01 01:01:01.000000000 +0100\n".replace(".", " ").split(" ")
-        return parse_creation_time(creation_time_arg1)
+        uname = os.uname()
+        running_dir = Path(configManager.bridgeConfig.runningDir)
+        # Use consistent time format for both Linux and macOS
+        if uname.sysname == "Linux":
+            stat_cmd = f"stat -c %y {running_dir}/{filepath}"
+        else:  # macOS and other Unix systems
+            stat_cmd = f'stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" {running_dir}/{filepath}'
+
+        creation_time = subprocess.run(stat_cmd, shell=True, capture_output=True, text=True)
+        logging.debug(f"stat output for {running_dir}/{filepath}: {creation_time.stdout}")
+        if creation_time.returncode != 0:
+            logging.error(f"Error getting file creation time for {running_dir}/{filepath}: {creation_time.stderr}")
+            return "2999-01-01 01:01:01"
+
+        if creation_time.stdout:
+            return parse_creation_time(creation_time.stdout.strip())
+        else:
+            return "2999-01-01 01:01:01"
     except subprocess.SubprocessError as e:
         logging.error(f"Error getting file creation time: {e}")
         return "2999-01-01 01:01:01"
@@ -117,25 +134,30 @@ def get_github_publish_time(url: str) -> str:
         logging.error(f"No connection to GitHub: {e}")
         return "1970-01-01 00:00:00"
 
-def parse_creation_time(creation_time_arg1: List[str]) -> str:
+def parse_creation_time(creation_time_str: str) -> str:
     """
     Parse the creation time from the output of the stat command.
     
     Args:
-        creation_time_arg1 (List[str]): The list of strings representing the creation time.
+        creation_time_str (str): The string representing the creation time in format "YYYY-MM-DD HH:MM:SS"
     
     Returns:
         str: The parsed creation time in the format "%Y-%m-%d %H".
     """
     try:
-        if len(creation_time_arg1) < 4:
-            creation_time = f"{creation_time_arg1[0]} {creation_time_arg1[1]}".replace('\n', '')
-            return datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S").astimezone(timezone.utc).strftime("%Y-%m-%d %H")
+        time_parts = creation_time_str.split()
+        if len(time_parts) >= 2:
+            date_time = f"{time_parts[0]} {time_parts[1]}"
+            if len(time_parts) > 2:
+                timezone_str = time_parts[2] if time_parts[2].startswith(('+', '-')) else None
+                if timezone_str:
+                    date_time += f" {timezone_str}"
+                    return datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")
+            return datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S").astimezone(timezone.utc).strftime("%Y-%m-%d %H")
         else:
-            creation_time = f"{creation_time_arg1[0]} {creation_time_arg1[1]} {creation_time_arg1[3]}".replace('\n', '')
-            return datetime.strptime(creation_time, "%Y-%m-%d %H:%M:%S %z").astimezone(timezone.utc).strftime("%Y-%m-%d %H")
+            return "2999-01-01 01:01:01"
     except ValueError as e:
-        logging.error(f"Error parsing creation time: {e}")
+        logging.error(f"Error parsing creation time: {e}, input: {creation_time_str}")
         return "2999-01-01 01:01:01"
 
 def update_swupdate2_timestamps() -> None:
