@@ -1,15 +1,14 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any
-from configManager.argumentHandler import parse_arguments
 
 @dataclass
 class Config:
     newLights: Dict[str, Any] = field(default_factory=dict)
     arg: Dict[str, Any] = field(default_factory=dict)
 
-    def populate(self) -> None:
+    def clear_new_lights(self) -> None:
         """
-        Populate the configuration with parsed arguments.
+        Clear the new lights dictionary.
 
         Args:
             None
@@ -18,4 +17,3 @@ class Config:
             None
         """
         self.newLights.clear()
-        self.arg.update(parse_arguments())

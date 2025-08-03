@@ -61,27 +61,27 @@ class GitHubInstaller:
             # Download server archive
             # server_url = f"https://github.com/diyhue/diyhue/archive/{branch}.zip"
             server_url = f"https://github.com/hendriksen-mark/diyhue/archive/{branch}.zip"
-            server_zip_path = self.temp_dir / "server.zip"
+            server_zip_path = self.temp_dir / "diyHue.zip"
             
-            logging.info(f"Downloading server update from {server_url}")
+            logging.info(f"Downloading diyHue update from {server_url}")
             if not self._download_file(server_url, server_zip_path):
-                logging.error(f"Failed to download server update from {server_url} to {server_zip_path}")
+                logging.error(f"Failed to download diyHue update from {server_url} to {server_zip_path}")
                 return False
             
             bridgeConfig["config"]["swupdate2"]["state"] = "installing"
             
             # Extract archive
-            extract_dir = self.temp_dir / "server_extract"
+            extract_dir = self.temp_dir / "diyHue_extract"
             if not self._extract_zip(server_zip_path, extract_dir):
-                logging.error(f"Failed to extract server zip {server_zip_path} to {extract_dir}")
+                logging.error(f"Failed to extract diyHue zip {server_zip_path} to {extract_dir}")
                 return False
             
             server_zip_path.unlink()  # Remove zip file
             
             # Find the extracted directory
-            extracted_dirs = list(extract_dir.glob("raspberry_extension_server-*"))
+            extracted_dirs = list(extract_dir.glob("diyHue-*"))
             if not extracted_dirs:
-                logging.error("Could not find extracted server directory")
+                logging.error("Could not find extracted diyHue directory")
                 logging.error(f"Checked in {extract_dir}, found: {[str(d) for d in extract_dir.iterdir()]}")
                 return False
             
@@ -94,16 +94,21 @@ class GitHubInstaller:
             
             # Copy server files
             files_to_copy = [
-                "flaskUI",
-                "ServerObjects", 
-                "services",
-                "configManager",
-                "api.py"
+                "BridgeEmulator/flaskUI",
+                "BridgeEmulator/functions",
+                "BridgeEmulator/lights",
+                "BridgeEmulator/sensors",
+                "BridgeEmulator/HueObjects",
+                "BridgeEmulator/services",
+                "BridgeEmulator/configManager",
+                "BridgeEmulator/HueEmulator3.py",
+                "BridgeEmulator/openssl.conf"
             ]
             
             for item in files_to_copy:
                 source = server_source / item
-                dest = self.server_path / item
+                item_name = Path(item).name
+                dest = self.server_path / item_name
                 
                 if source.exists():
                     if source.is_dir():
@@ -115,21 +120,21 @@ class GitHubInstaller:
                     logging.debug(f"Copied {item} to server directory")
                 else:
                     logging.warning(f"Source file/directory not found: {source}")
-            
+
             return True
             
         except Exception as e:
-            logging.error(f"Error installing server update: {e}")
+            logging.error(f"Error installing diyHue update: {e}")
             return False
     
     def _install_ui_update(self) -> bool:
         """Install UI update from GitHub releases."""
         try:
             # Download UI archive
-            # ui_url = "https://github.com/diyhue/diyHueUI/releases/latest/download/raspberry_extension_server_ui-release.zip"
-            ui_url = "https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/raspberry_extension_server_ui-release.zip"
-            ui_zip_path = self.temp_dir / "serverUI.zip"
-            
+            # ui_url = "https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip"
+            ui_url = "https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip"
+            ui_zip_path = self.temp_dir / "diyHueUI.zip"
+
             logging.info(f"Downloading UI update from {ui_url}")
             if not self._download_file(ui_url, ui_zip_path):
                 logging.error(f"Failed to download UI update from {ui_url} to {ui_zip_path}")
@@ -138,7 +143,7 @@ class GitHubInstaller:
             bridgeConfig["config"]["swupdate2"]["state"] = "installing"
             
             # Extract UI archive
-            ui_extract_dir = self.temp_dir / "raspberry_extension_server_ui"
+            ui_extract_dir = self.temp_dir / "diyHueUI"
             ui_extract_dir.mkdir(exist_ok=True)
             
             if not self._extract_zip(ui_zip_path, ui_extract_dir):

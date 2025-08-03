@@ -2,9 +2,10 @@ import argparse
 import logManager
 from os import getenv, path
 from functions.network import getIpAddress
-from subprocess import check_output, call
+from subprocess import check_output
 from typing import Union, Dict
 import pathlib
+from services.genCert import gen_cert_python
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -24,7 +25,7 @@ def get_environment_variable(var: str, boolean: bool = False) -> Union[str, bool
         value = value.lower() == "true"
     return value
 
-def generate_certificate(mac: str, path: str) -> None:
+def generate_certificate(mac: str, configPath: str, runningPath: str) -> None:
     """
     Generate a certificate using the provided MAC address and save it to the specified path.
 
@@ -33,24 +34,28 @@ def generate_certificate(mac: str, path: str) -> None:
         path (str): The path where the certificate will be saved.
     """
     logging.info("Generating certificate")
-    serial = (mac[:6] + "fffe" + mac[-6:]).encode('utf-8')
-    call(["/bin/bash", "/opt/hue-emulator/genCert.sh", serial, path])
-    logging.info("Certificate created")
+    serial = mac[:6] + "fffe" + mac[-6:]
+    success = gen_cert_python(serial, configPath, runningPath)
+    if success:
+        logging.info("Certificate created")
+    else:
+        logging.error("Certificate generation failed")
+        raise Exception("Certificate generation failed")
 
-def process_arguments(configDir: str, args: Dict[str, Union[str, bool]]) -> None:
+def process_arguments(config, args: Dict[str, Union[str, bool]]) -> None:
     """
     Process the provided arguments and configure logging and certificate generation.
 
     Args:
-        configDir (str): The directory where configuration files are stored.
+        config (configHandler.Config): The configuration object.
         args (dict): A dictionary of arguments.
     """
     log_level = "DEBUG" if args["DEBUG"] else "INFO"
     logManager.logger.configure_logger(log_level)
     logging.info(f"Debug logging {'enabled' if args['DEBUG'] else 'disabled'}!")
 
-    if not path.isfile(path.join(configDir, "cert.pem")):
-        generate_certificate(args["MAC"], configDir)
+    if not path.isfile(path.join(config.configDir, "cert.pem")):
+        generate_certificate(args["MAC"], config.configDir, config.runningDir)
 
 def parse_arguments() -> Dict[str, Union[str, int, bool]]:
     """

@@ -24,7 +24,7 @@ def get_pi_temp() -> float:
     try:
         with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
             temp_millidegrees = int(f.read().strip())
-            return temp_millidegrees / 1000.0
+            return round(temp_millidegrees / 1000.0, 2)
     except (FileNotFoundError, ValueError, PermissionError):
         pass
     

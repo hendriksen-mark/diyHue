@@ -32,9 +32,7 @@ COPY ./BridgeEmulator/sensors/ /opt/hue-emulator/sensors/
 COPY ./BridgeEmulator/HueObjects/ /opt/hue-emulator/HueObjects/
 COPY ./BridgeEmulator/services/ /opt/hue-emulator/services/
 COPY ./BridgeEmulator/configManager/ /opt/hue-emulator/configManager/
-COPY ./BridgeEmulator/logManager/ /opt/hue-emulator/logManager/
 COPY ./BridgeEmulator/HueEmulator3.py /opt/hue-emulator/
-COPY ./BridgeEmulator/githubInstall.sh /opt/hue-emulator/
 
 ## Install the web interface
 RUN curl -sL -A "Mozilla/5.0" https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip -o diyHueUI.zip \
@@ -51,11 +49,7 @@ RUN curl -sL -A "Mozilla/5.0" https://github.com/hendriksen-mark/diyHueUI/releas
     && rm -r diyhueUI
 
 ## Copy correct (compiled) C file from previous image
-COPY ./BridgeEmulator/genCert.sh /opt/hue-emulator/
 COPY ./BridgeEmulator/openssl.conf /opt/hue-emulator/
-
-## Change Docker script permissions
-RUN chmod +x /opt/hue-emulator/genCert.sh
 
 ## Expose ports
 EXPOSE 80 443 1900/udp 1982/udp 2100/udp

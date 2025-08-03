@@ -1,5 +1,5 @@
 from configManager import configInit
-from configManager.argumentHandler import parse_arguments, generate_certificate
+from configManager.argumentHandler import generate_certificate
 import os
 import subprocess
 import logManager
@@ -50,15 +50,21 @@ def _write_yaml(path: str, contents: Any) -> None:
 
 class Config:
     yaml_config: Optional[Dict[str, Any]] = None
-    argsDict: Dict[str, Any] = parse_arguments()
-    configDir: str = argsDict["CONFIG_PATH"]
-    runningDir: str = argsDict["RUNNING_PATH"]
+    argsDict: Dict[str, Any] = {}
+    configDir: str = ""
+    runningDir: str = ""
 
     def __init__(self) -> None:
         """
         Initialize the Config class.
         """
-        if not os.path.exists(self.configDir):
+        pass
+
+    def ensure_config_dir(self) -> None:
+        """
+        Ensure the config directory exists.
+        """
+        if self.configDir and not os.path.exists(self.configDir):
             os.makedirs(self.configDir)
 
     def _set_default_config_values(self, config: Dict[str, Any]) -> None:
@@ -463,12 +469,6 @@ class Config:
         """
         self.yaml_config = configInit.write_args(args, self.yaml_config)
 
-    def generate_security_key(self) -> None:
-        """
-        Generate a new security key for the configuration.
-        """
-        self.yaml_config = configInit.generate_security_key(self.yaml_config)
-
     def create_debug_logs(self) -> str:
         """
         Create debug versions of log files with API user keys replaced by names.
@@ -534,11 +534,12 @@ class Config:
                     f.write(modified_content)
 
                 logging.info(f"Created debug log: {debug_name} ({replacements_made} API key replacements)")
-                
+
             except Exception as e:
                 logging.error(f"Error processing log file {log_file}: {str(e)}")
-        
+
         return debug_dir
+
     def restart_python(self) -> None:
         """
         Restart the Python process or systemd service.
@@ -546,7 +547,7 @@ class Config:
         import signal
         try:
             logging.info("restart using systemctl")
-            subprocess.run(['sudo', 'systemctl', 'restart', 'raspberry_extension_server.service'], check=True)
+            subprocess.run(['sudo', 'systemctl', 'restart', 'hue-emulator.service'], check=True)
             return  # Should not reach here if systemctl works
         except subprocess.CalledProcessError as e:
             # If the process was killed by SIGTERM, do nothing (systemd is restarting us)
