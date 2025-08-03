@@ -576,6 +576,11 @@ class Config:
             logging.info("restart using systemctl")
             if self.try_systemctl_restart():
                 return  # Successfully restarted
+            else:
+                # systemctl restart failed, fall back to os.execl
+                logging.info("systemctl restart failed or not available, falling back to os.execl")
+                logging.info(f"restart {sys.executable} with args: {sys.argv}")
+                os.execl(sys.executable, sys.executable, *sys.argv)
         except subprocess.CalledProcessError as e:
             # If the process was killed by SIGTERM, do nothing (systemd is restarting us)
             if e.returncode == -signal.SIGTERM:
