@@ -17,7 +17,7 @@ COPY requirements.txt ./
 RUN apt update \
     && dpkg --configure -a \
     && apt install --no-install-recommends -y \
-        curl unzip python3 python3-pip python3-dev python3-setuptools gcc \
+        curl unzip python3 python3-pip python3-dev python3-setuptools gcc git \
         openssl nmap psmisc iproute2 bluez bluetooth libcoap3-bin faketime \
     && pip3 install -r requirements.txt --no-cache-dir --break-system-packages \
     && apt purge -y python3-pip python3-setuptools python3-dev gcc \
