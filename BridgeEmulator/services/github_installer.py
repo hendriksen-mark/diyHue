@@ -283,16 +283,24 @@ class GitHubInstaller:
             # Remove all contents of running folder for fresh install
             logging.info("Removing existing installation for fresh install...")
             for item in self.server_path.iterdir():
+                # Skip config directory if it's inside server_path
+                if item == self.config_path:
+                    logging.debug(f"Skipping config directory: {item}")
+                    continue
                 if item.is_dir():
                     shutil.rmtree(item)
                 else:
                     item.unlink()
-            logging.debug("Removed all existing files from server directory")
+            logging.debug("Removed all existing files from server directory (except config)")
 
             # Restore config folder
-            if backup_dir.exists():
+            if backup_dir.exists() and not self.config_path.exists():
                 shutil.copytree(backup_dir, self.config_path)
                 logging.debug("Restored config folder")
+            elif backup_dir.exists() and self.config_path.exists():
+                logging.debug("Config folder already exists, skipping restore")
+            else:
+                logging.debug("No config backup to restore")
 
             # Restore log files
             if log_backup_dir.exists():
