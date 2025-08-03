@@ -147,7 +147,13 @@ def parse_creation_time(creation_time_str: str) -> str:
     try:
         time_parts = creation_time_str.split()
         if len(time_parts) >= 2:
-            date_time = f"{time_parts[0]} {time_parts[1]}"
+            date_part = time_parts[0]
+            time_part = time_parts[1]
+            if '.' in time_part:
+                time_part = time_part.split('.')[0]
+
+            date_time = f"{date_part} {time_part}"
+
             if len(time_parts) > 2:
                 timezone_str = time_parts[2] if time_parts[2].startswith(('+', '-')) else None
                 if timezone_str:
