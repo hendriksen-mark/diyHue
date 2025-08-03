@@ -110,7 +110,8 @@ class GitHubInstaller:
                 "BridgeEmulator/services",
                 "BridgeEmulator/configManager",
                 "BridgeEmulator/HueEmulator3.py",
-                "BridgeEmulator/openssl.conf"
+                "BridgeEmulator/openssl.conf",
+                "BridgeEmulator/owngithubInstall.py",
             ]
             
             for item in files_to_copy:
