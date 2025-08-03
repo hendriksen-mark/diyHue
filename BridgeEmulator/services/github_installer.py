@@ -34,9 +34,8 @@ class GitHubInstaller:
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 self.temp_dir = Path(temp_dir)
-                # Set state to transferring while downloading
-                bridgeConfig["config"]["swupdate2"]["state"] = "transferring"
                 if state == "allreadytoinstall":
+                    bridgeConfig["config"]["swupdate2"]["state"] = "transferring"
                     logging.info("Installing server + UI update")
                     if not self._install_server_update(branch):
                         logging.error("_install_server_update failed. Aborting update process.")
@@ -86,6 +85,9 @@ class GitHubInstaller:
                 return False
             
             server_source = extracted_dirs[0]
+
+            if not self._install_system_dependencies():
+                logging.error("_install_system_dependencies failed. Continuing update process.")
             
             # Update pip and install requirements
             if not self._update_python_dependencies(server_source / "requirements.txt"):
@@ -281,7 +283,75 @@ class GitHubInstaller:
         except Exception as e:
             logging.error(f"Unexpected error updating Python dependencies: {e}")
             return False
-    
+
+    def _install_system_dependencies(self) -> bool:
+        """Install required system dependencies based on the detected package manager."""
+        try:
+            logging.info("Installing system dependencies...")
+            
+            # Check for apt (Debian-based)
+            apt_check = subprocess.run(['which', 'apt'], capture_output=True, text=True)
+            if apt_check.returncode == 0:
+                logging.info("Detected apt package manager (Debian-based)")
+                packages = [
+                    'unzip', 'python3', 'python3-pip', 'openssl', 'git',
+                    'bluez', 'bluetooth', 'libcoap3-bin', 'faketime'
+                ]
+                cmd = ['apt-get', 'install', '-y'] + packages
+                
+                try:
+                    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                    logging.info("System dependencies installed successfully")
+                    if result.stdout:
+                        logging.debug(f"apt install output: {result.stdout.strip()}")
+                    return True
+                except subprocess.CalledProcessError as e:
+                    logging.error(f"Failed to install dependencies with apt: {e}")
+                    if e.stderr:
+                        logging.error(f"apt error: {e.stderr.strip()}")
+                    return False
+            
+            # Check for pacman (Arch Linux)
+            pacman_check = subprocess.run(['which', 'pacman'], capture_output=True, text=True)
+            if pacman_check.returncode == 0:
+                logging.info("Detected pacman package manager (Arch Linux)")
+
+                # Update package database
+                try:
+                    subprocess.run(['pacman', '-Syq', '--noconfirm'], check=True, capture_output=True, text=True)
+                except subprocess.CalledProcessError as e:
+                    logging.error(f"Failed to update pacman database: {e}")
+                    return False
+                
+                # Install packages
+                packages = [
+                    'unzip', 'python3', 'python-pip', 'gnu-netcat', 
+                    'libcoap', 'faketime', 'git', 'openssl', 'bluez', 'bluetooth'
+                ]
+                cmd = ['pacman', '-Sq', '--noconfirm'] + packages
+                
+                try:
+                    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                    logging.info("System dependencies installed successfully")
+                    if result.stdout:
+                        logging.debug(f"pacman install output: {result.stdout.strip()}")
+                    return True
+                except subprocess.CalledProcessError as e:
+                    logging.error(f"Failed to install dependencies with pacman: {e}")
+                    if e.stderr:
+                        logging.error(f"pacman error: {e.stderr.strip()}")
+                    return False
+            
+            # No supported package manager found
+            logging.warning("Unable to detect supported package manager (apt or pacman)")
+            logging.warning("Please ensure the following packages are installed manually:")
+            logging.warning("- unzip, python3, python3-pip, openssl, bluez, bluetooth , git")
+            logging.warning("- libcoap3-bin (or libcoap), faketime, gnu-netcat (arch)")
+            return False
+            
+        except Exception as e:
+            logging.error(f"Unexpected error installing system dependencies: {e}")
+            return False
 
 def install_github_updates(state: str, branch: str) -> bool:
     """

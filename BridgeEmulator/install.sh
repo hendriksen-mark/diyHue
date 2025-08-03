@@ -97,11 +97,11 @@ esac
 echo -e "\033[36m Installing dependencies.\033[0m"
 if type apt &> /dev/null; then
   # Debian-based distro
-  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth libcoap3-bin faketime
+  apt-get install -y unzip python3 python3-pip openssl bluez bluetooth libcoap3-bin faketime pip
 elif type pacman &> /dev/null; then
   # Arch linux
   pacman -Syq --noconfirm || exit 1
-  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat libcoap faketime || exit 1
+  pacman -Sq --noconfirm unzip python3 python-pip gnu-netcat libcoap faketime pip || exit 1
 else
   # Or assume that packages are already installed (possibly with user confirmation)?
   # Or check them?
