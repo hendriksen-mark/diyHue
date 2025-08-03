@@ -99,14 +99,15 @@ def get_file_creation_time(filepath: str) -> str:
             stat_cmd = f'stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" {running_dir}/{filepath}'
 
         creation_time = subprocess.run(stat_cmd, shell=True, capture_output=True, text=True)
-        logging.debug(f"stat output for {running_dir}/{filepath}: {creation_time.stdout}")
         if creation_time.returncode != 0:
             logging.error(f"Error getting file creation time for {running_dir}/{filepath}: {creation_time.stderr}")
+            logging.error(f"stat output for {running_dir}/{filepath}: {creation_time.stdout}")
             return "2999-01-01 01:01:01"
 
         if creation_time.stdout:
             return parse_creation_time(creation_time.stdout.strip())
         else:
+            logging.error(f"No output from stat command for {running_dir}/{filepath}")
             return "2999-01-01 01:01:01"
     except subprocess.SubprocessError as e:
         logging.error(f"Error getting file creation time: {e}")
