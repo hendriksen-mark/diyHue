@@ -1,15 +1,16 @@
 import uuid
 import logManager
 import random
+from typing import Any
 
 logging = logManager.logger.get_logger(__name__)
 
 eventstream = []
 
-def StreamEvent(message):
+def StreamEvent(message: dict[str, Any]) -> None:
     eventstream.append(message)
 
-def v1StateToV2(v1State):
+def v1StateToV2(v1State: dict[str, Any]) -> dict[str, Any]:
     v2State = {}
     if "on" in v1State:
         v2State["on"] = {"on": v1State["on"]}
@@ -21,7 +22,7 @@ def v1StateToV2(v1State):
         v2State["color"] = {"xy": {"x": v1State["xy"][0], "y": v1State["xy"][1]}}
     return v2State
 
-def v2StateToV1(v2State):
+def v2StateToV1(v2State: dict[str, Any]) -> dict[str, Any]:
     v1State = {}
     if "dimming" in v2State:
         v1State["bri"] = int(v2State["dimming"]["brightness"] * 2.54)
@@ -39,15 +40,15 @@ def v2StateToV1(v2State):
         v1State["controlled_service"] = v2State["controlled_service"]
     return v1State
 
-def genV2Uuid():
+def genV2Uuid() -> str:
     return str(uuid.uuid4())
 
-def generate_unique_id():
+def generate_unique_id() -> str:
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
     return "00:17:88:01:00:%02x:%02x:%02x-0b" % tuple(rand_bytes)
 
-def setGroupAction(group, state, scene=None):
-    lightsState = {}
+def setGroupAction(group, state: dict[str, Any], scene = None) -> None:
+    lightsState: dict[str, Any] = {}
     if scene is not None:
         sceneStates = list(scene.lightstates.items())
         for light, state in sceneStates:
@@ -66,7 +67,7 @@ def setGroupAction(group, state, scene=None):
             group.state["all_on"] = state["on"]
         group.action.update(state)
 
-    queueState = {}
+    queueState: dict[str, Any] = {}
     for light in group.lights:
         if light() and light().id_v1 in lightsState:
             updateLightState(light, lightsState[light().id_v1])
@@ -79,7 +80,7 @@ def setGroupAction(group, state, scene=None):
 
     group.state = group.update_state()
 
-def updateGroupActionColormode(group, state):
+def updateGroupActionColormode(group, state: dict[str, Any]) -> None:
     if "xy" in state:
         group.action["colormode"] = "xy"
     elif "ct" in state:
@@ -87,7 +88,7 @@ def updateGroupActionColormode(group, state):
     elif "hue" in state or "sat" in state:
         group.action["colormode"] = "hs"
 
-def updateLightState(light, state):
+def updateLightState(light, state: dict[str, Any]) -> None:
     for key, value in state.items():
         if key in light().state:
             light().state[key] = value
@@ -97,7 +98,7 @@ def updateLightState(light, state):
     if "bri" in state:
         applyBrightnessLimits(light, state)
 
-def applyBrightnessLimits(light, state):
+def applyBrightnessLimits(light, state: dict[str, Any]) -> None:
     if "min_bri" in light().protocol_cfg and light().protocol_cfg["min_bri"] > state["bri"]:
         state["bri"] = light().protocol_cfg["min_bri"]
     if "max_bri" in light().protocol_cfg and light().protocol_cfg["max_bri"] < state["bri"]:
@@ -105,7 +106,7 @@ def applyBrightnessLimits(light, state):
     if light().protocol == "mqtt" and not light().state["on"]:
         return
 
-def addToQueueState(queueState, light, state):
+def addToQueueState(queueState: dict[str, Any], light, state: dict[str, Any]) -> None:
     if light().protocol_cfg["ip"] not in queueState:
         queueState[light().protocol_cfg["ip"]] = {"object": light(), "lights": {}}
     if light().protocol == "native_multi":
@@ -113,7 +114,7 @@ def addToQueueState(queueState, light, state):
     elif light().protocol == "mqtt":
         queueState[light().protocol_cfg["ip"]]["lights"][light().protocol_cfg["command_topic"]] = state
 
-def incProcess(state, data):
+def incProcess(state: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
     if "bri_inc" in data:
         state["bri"] = min(max(state["bri"] + data["bri_inc"], 1), 254)
         data["bri"] = state["bri"]

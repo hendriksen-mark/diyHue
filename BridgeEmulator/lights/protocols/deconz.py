@@ -1,18 +1,17 @@
-import json
 import logManager
 import requests
 from time import sleep
 
 logging = logManager.logger.get_logger(__name__)
 
-def send_request(url, payload):
+def send_request(url: str, payload: dict) -> None:
     try:
         response = requests.put(url, json=payload, timeout=3)
         response.raise_for_status()
     except requests.RequestException as e:
         logging.error("Error sending request to %s: %s", url, e)
 
-def set_light(light, data):
+def set_light(light, data: dict) -> None:
     base_url = f"http://{light.protocol_cfg['ip']}/api/{light.protocol_cfg['deconzUser']}/lights/{light.protocol_cfg['deconzId']}/state"
     payload = {}
     payload.update(data)
@@ -31,7 +30,7 @@ def set_light(light, data):
     if color:
         send_request(base_url, color)
 
-def get_light_state(light):
+def get_light_state(light) -> dict:
     url = f"http://{light.protocol_cfg['ip']}/api/{light.protocol_cfg['deconzUser']}/lights/{light.protocol_cfg['deconzId']}"
     try:
         response = requests.get(url, timeout=3)
@@ -41,7 +40,7 @@ def get_light_state(light):
         logging.error("Error getting light state from %s: %s", url, e)
         return {}
 
-def discover(detectedLights, credentials):
+def discover(detectedLights: list, credentials: dict) -> None:
     if "deconzUser" in credentials and credentials["deconzUser"]:
         logging.debug("deconz: <discover> invoked!")
         url = f"http://{credentials['deconzHost']}:{credentials['deconzPort']}/api/{credentials['deconzUser']}/lights"

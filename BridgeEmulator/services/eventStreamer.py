@@ -9,6 +9,8 @@ import logManager
 logging = logManager.logger.get_logger(__name__)
 stream = Blueprint('stream', __name__)
 
+connected_clients = []
+
 def messageBroker() -> None:
     """
     Continuously checks for events in the HueObjects event stream and logs them.
@@ -37,19 +39,28 @@ def streamV2Events() -> Response:
         Yields:
             str: Formatted event data.
         """
-        yield f": hi\n\n"
-        while True:
-            try:
-                if len(HueObjects.eventstream) > 0:
-                    for index, messages in enumerate(HueObjects.eventstream):
-                        yield f"id: {int(time()) }:{index}\ndata: {json.dumps([messages], separators=(',', ':'))}\n\n"
-                    HueObjects.eventstream = []
-                sleep(0.2)
-            except GeneratorExit:
-                logging.info("Client closed the connection.")
-                break
-            except Exception as e:
-                logging.error(f"Error in event stream: {e}")
-                break
+        # Add client to the list
+        client_id = int(time())
+        connected_clients.append(client_id)
+        logging.info(f"Client {client_id} connected. Total clients: {len(connected_clients)}")
+        try:
+            yield f": hi\n\n"
+            while True:
+                try:
+                    if len(HueObjects.eventstream) > 0:
+                        for index, messages in enumerate(HueObjects.eventstream):
+                            yield f"id: {int(time()) }:{index}\ndata: {json.dumps([messages], separators=(',', ':'))}\n\n"
+                        HueObjects.eventstream = []
+                    sleep(0.2)
+                except GeneratorExit:
+                    logging.info("Client closed the connection.")
+                    break
+                except Exception as e:
+                    logging.error(f"Error in event stream: {e}")
+                    break
+        finally:
+            if client_id in connected_clients:
+                connected_clients.remove(client_id)
+                logging.info(f"Client {client_id} disconnected. Total clients: {len(connected_clients)}")
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream; charset=utf-8')

@@ -1,6 +1,8 @@
 import logManager
 import asyncio
 from functions.colors import convert_xy
+from typing import Any
+
 logging = logManager.logger.get_logger(__name__)
 Connections = {}
 
@@ -25,15 +27,15 @@ CHAR_COLOR = '932c32bd-0005-47a2-835a-a8d455b859dd'
 class Lamp(object):
     """A wrapper for the Philips Hue BLE protocol"""
 
-    def __init__(self, address):
+    def __init__(self, address: str) -> None:
         self.address = address
         self.client = None
 
     @property
-    def is_connected(self):
+    def is_connected(self) -> bool:
         return self.client and self.client.is_connected
 
-    async def connect(self):
+    async def connect(self) -> None:
         # reinitialize BleakClient for every connection to avoid errors
         self.client = BleakClient(self.address)
         await self.client.connect()
@@ -44,55 +46,55 @@ class Lamp(object):
         except ValueError:
             self.converter = Converter(GamutC)
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         await self.client.disconnect()
         self.client = None
 
-    async def get_model(self):
+    async def get_model(self) -> str:
         """Returns the model string"""
         model = await self.client.read_gatt_char(CHAR_MODEL)
         return model.decode('ascii')
 
-    async def get_power(self):
+    async def get_power(self) -> bool:
         """Gets the current power state"""
         power = await self.client.read_gatt_char(CHAR_POWER)
         return bool(power[0])
 
-    async def set_power(self, on):
+    async def set_power(self, on: bool) -> None:
         """Sets the power state"""
         await self.client.write_gatt_char(CHAR_POWER, bytes([1 if on else 0]), response=True)
 
-    async def get_brightness(self):
+    async def get_brightness(self) -> float:
         """Gets the current brightness as a float between 0.0 and 1.0"""
         brightness = await self.client.read_gatt_char(CHAR_BRIGHTNESS)
         return brightness[0] / 255
 
-    async def set_brightness(self, brightness):
+    async def set_brightness(self, brightness: float) -> None:
         """Sets the brightness from a float between 0.0 and 1.0"""
         await self.client.write_gatt_char(CHAR_BRIGHTNESS, bytes([max(min(int(brightness * 255), 254), 1)]), response=True)
 
-    async def get_color_xy(self):
+    async def get_color_xy(self) -> tuple[float, float]:
         """Gets the current XY color coordinates as floats between 0.0 and 1.0"""
         buf = await self.client.read_gatt_char(CHAR_COLOR)
         x, y = unpack('<HH', buf)
         return x / 0xFFFF, y / 0xFFFF
 
-    async def set_color_xy(self, x, y):
+    async def set_color_xy(self, x: float, y: float) -> None:
         """Sets the XY color coordinates from floats between 0.0 and 1.0"""
         buf = pack('<HH', int(x * 0xFFFF), int(y * 0xFFFF))
         await self.client.write_gatt_char(CHAR_COLOR, buf, response=True)
 
-    async def get_color_rgb(self):
+    async def get_color_rgb(self) -> tuple[float, float, float]:
         """Gets the RGB color as floats between 0.0 and 1.0"""
         x, y = await self.get_color_xy()
         return self.converter.xy_to_rgb(x, y)
 
-    async def set_color_rgb(self, r, g, b):
+    async def set_color_rgb(self, r: float, g: float, b: float) -> None:
         """Sets the RGB color from floats between 0.0 and 1.0"""
         x, y = self.converter.rgb_to_xy(r, g, b)
         await self.set_color_xy(x, y)
 
-async def connect(light, reconnect=False):
+async def connect(light, reconnect=False) -> Lamp:
     ip = light.protocol_cfg["ip"]
     if ip in Connections and not reconnect:
         c = Connections[ip]
@@ -102,7 +104,7 @@ async def connect(light, reconnect=False):
         Connections[ip] = c
     return c
 
-async def set_light_async(light, data, retry=False):
+async def set_light_async(light, data: dict[str, Any], retry=False) -> None:
     c = await connect(light)
     try:
         for key, value in data.items():
@@ -123,11 +125,11 @@ async def set_light_async(light, data, retry=False):
         if not retry:
             await set_light_async(light, data, retry=True)
 
-def set_light(light, data):
+def set_light(light, data: dict[str, Any]) -> None:
     loop.run_until_complete(set_light_async(light, data))
 
-def get_light_state(light):
+def get_light_state(light) -> dict[str, Any]:
     return {}
 
-def discover(detectedLights, credentials):
+def discover(detectedLights: list, credentials: dict[str, Any]) -> dict[str, Any]:
     return {}

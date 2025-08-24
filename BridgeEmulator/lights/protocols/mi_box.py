@@ -1,6 +1,8 @@
 import binascii, socket, colorsys, time
 from functions.colors import convert_xy, rgbBrightness
 
+from typing import Any, Optional
+
 import logManager
 
 logging = logManager.logger.get_logger(__name__)
@@ -12,7 +14,7 @@ sessionId2 = 0
 sock = None
 lastSentMessageTime = 0
 
-def set_light(light, data, rgb = None):
+def set_light(light, data: dict[str, Any], rgb: Optional[tuple[int, int, int]] = None) -> None:
 	for key, value in data.items():
 		light.state[key] = value
 
@@ -38,11 +40,11 @@ def set_light(light, data, rgb = None):
 	if not on:
 		sendOffCmd(light)
 
-def bytesToHexStr(b):
+def bytesToHexStr(b: bytes) -> str:
 	hex_data = binascii.hexlify(b)
 	return hex_data.decode('utf-8')
 
-def sendMsg(light, msg):
+def sendMsg(light, msg: bytes) -> None:
 	global sock
 	logging.info("sending udp message to MiLight box:"+bytesToHexStr(msg))
 	if sock is None:
@@ -55,7 +57,7 @@ def sendMsg(light, msg):
 	logging.info("sock.sendall")
 	sock.sendall(msg)
 
-def closeSocket():
+def closeSocket() -> None:
 	global sock, commandCounter, sessionId1, sessionId2, lastSentMessageTime
 	if sock is not None:
 		logging.info("force closing socket connection")
@@ -65,7 +67,7 @@ def closeSocket():
 	sessionId2 = 0
 	commandCounter = 0
 
-def sendCmd(light, cmd, tries=3):
+def sendCmd(light, cmd: bytes, tries: int = 3) -> None:
 	global sock, commandCounter, sessionId1, sessionId2, lastSentMessageTime
 	logging.info("sendcommand"+bytesToHexStr(cmd))
 	#todo: prevent sending multiple commands at once, this will start the session id request multiple times
@@ -135,7 +137,7 @@ def sendCmd(light, cmd, tries=3):
 	else:
 		raise Exception("sending command failed after 3 tries")
 
-def getSessionId(light):
+def getSessionId(light) -> bool:
 	global sessionId1, sessionId2
 	sendMsg(light, b'\x20\x00\x00\x00\x16\x02\x62\x3A\xD5\xED\xA3\x01\xAE\x08\x2D\x46\x61\x41\xA7\xF6\xDC\xAF\xD3\xE6\x00\x00\x1E')
 	totalTries = 0
@@ -150,7 +152,7 @@ def getSessionId(light):
 			return True
 	return False
 
-def sendOnCmd(light):
+def sendOnCmd(light) -> None:
 	light_type = light.protocol_cfg["light_type"]
 	cmd = b''
 	if light_type == "rgbww":
@@ -162,7 +164,7 @@ def sendOnCmd(light):
 	cmd += b'\x00\x00\x00'
 	sendCmd(light, cmd)
 
-def sendOffCmd(light):
+def sendOffCmd(light) -> None:
 	light_type = light.protocol_cfg["light_type"]
 	cmd = b''
 	if light_type == "rgbww":
@@ -175,7 +177,7 @@ def sendOffCmd(light):
 	sendCmd(light, cmd)
 
 #brightness is between 0-100
-def sendBrightnessCmd(light, brightness):
+def sendBrightnessCmd(light, brightness: int) -> None:
 	light_type = light.protocol_cfg["light_type"]
 	cmd = b''
 	if light_type == "rgbww":
@@ -189,14 +191,14 @@ def sendBrightnessCmd(light, brightness):
 	sendCmd(light, cmd)
 
 #hue is between 0-255
-def sendHueCmd(light, hue):
+def sendHueCmd(light, hue: int) -> None:
 	cmd = b'\x01'
 	hue = int(hue)
 	cmd += bytes([hue] * 4)
 	sendCmd(light, cmd)
 
 #saturation is between 0-100
-def sendSaturationCmd(light, saturation):
+def sendSaturationCmd(light, saturation: int) -> None:
 	cmd = b'\x02'
 	#todo: not sure if \x02 works with rgbw and hub lights,
 	#I don't have the hardware so I can't test which bytes are needed here
@@ -206,7 +208,7 @@ def sendSaturationCmd(light, saturation):
 	sendCmd(light, cmd)
 
 #kelvin is between 0-100
-def sendKelvinCmd(light, kelvin):
+def sendKelvinCmd(light, kelvin: int) -> None:
 	cmd = b'\x05'
 	kelvin = int(kelvin)
 	cmd += bytes([kelvin])

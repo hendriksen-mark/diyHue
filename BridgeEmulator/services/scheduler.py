@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, time, timezone
 from threading import Thread
 from time import sleep
-from typing import Any, Tuple
+from typing import Tuple
 
 import configManager
 import logManager
@@ -13,11 +13,12 @@ from functions.daylightSensor import daylightSensor
 from functions.request import sendRequest
 from functions.scripts import findGroup, triggerScript
 from services import updateManager
+from HueObjects import Group, Scene, Schedule, Sensor, BehaviorInstance, SmartScene
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
-def execute_schedule(schedule: str, obj: Any, delay: int) -> None:
+def execute_schedule(schedule: str, obj: Schedule.Schedule, delay: int) -> None:
     """
     Execute a schedule command with a specified delay.
 
@@ -29,7 +30,7 @@ def execute_schedule(schedule: str, obj: Any, delay: int) -> None:
     logging.info(f"execute schedule: {schedule} with delay {delay}")
     sendRequest(obj.command["address"], obj.command["method"], json.dumps(obj.command["body"]), 1, delay)
 
-def execute_timer(schedule: str, obj: Any, delay: int) -> None:
+def execute_timer(schedule: str, obj: Schedule.Schedule, delay: int) -> None:
     """
     Execute a timer command with a specified delay.
 
@@ -54,12 +55,12 @@ def check_time_match(time_object: datetime) -> bool:
     now = datetime.now()
     return now.second == time_object.second and now.minute == time_object.minute and now.hour == time_object.hour
 
-def get_schedule_time(obj: Any) -> Tuple[str, int]:
+def get_schedule_time(obj: Schedule.Schedule) -> Tuple[str, int]:
     """
     Get the schedule time and delay from the schedule object.
 
     Args:
-        obj (Any): The schedule object containing time details.
+        obj (Schedule.Schedule): The schedule object containing time details.
 
     Returns:
         Tuple[str, int]: The schedule time string and delay in seconds.
@@ -69,7 +70,7 @@ def get_schedule_time(obj: Any) -> Tuple[str, int]:
         return obj.localtime[:-9], delay
     return obj.localtime, 0
 
-def process_schedule(schedule: str, obj: Any) -> None:
+def process_schedule(schedule: str, obj: Schedule.Schedule) -> None:
     """
     Process and execute the schedule based on its configuration.
 
@@ -104,7 +105,7 @@ def process_schedule(schedule: str, obj: Any) -> None:
                 if obj.autodelete:
                     del obj
 
-def process_behavior_instance(instance: str, obj: Any) -> None:
+def process_behavior_instance(instance: str, obj: BehaviorInstance.BehaviorInstance) -> None:
     """
     Process and execute the behavior instance based on its configuration.
 
@@ -118,7 +119,7 @@ def process_behavior_instance(instance: str, obj: Any) -> None:
                 if datetime.now().strftime("%A").lower() not in obj.configuration["when"]["recurrence_days"]:
                     return
             if "time_point" in obj.configuration["when"] and obj.configuration["when"]["time_point"]["type"] == "time":
-                triggerTime = obj.configuration["when"]["time_point"]["time"]
+                triggerTime: dict[str, int] = obj.configuration["when"]["time_point"]["time"]
                 time_object = datetime(
                     year=1,
                     month=1,
@@ -127,7 +128,7 @@ def process_behavior_instance(instance: str, obj: Any) -> None:
                     minute=triggerTime["minute"],
                     second=triggerTime.get("second", 0))
                 if "fade_in_duration" in obj.configuration or "turn_lights_off_after" in obj.configuration:
-                    fade_duration = obj.configuration.get("turn_lights_off_after", obj.configuration["fade_in_duration"])
+                    fade_duration: dict[str, int] = obj.configuration.get("turn_lights_off_after", obj.configuration["fade_in_duration"])
                     delta = timedelta(
                         hours=fade_duration.get("hours", 0),
                         minutes=fade_duration.get("minutes", 0),
@@ -143,7 +144,7 @@ def process_behavior_instance(instance: str, obj: Any) -> None:
                     return
             if obj.active:
                 if "end_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["end_at"] and obj.configuration["when_extended"]["end_at"]["time_point"]["type"] == "time":
-                    triggerTime = obj.configuration["when_extended"]["end_at"]["time_point"]["time"]
+                    triggerTime: dict[str, int] = obj.configuration["when_extended"]["end_at"]["time_point"]["time"]
                     time_object = time(
                         hour=triggerTime["hour"],
                         minute=triggerTime["minute"],
@@ -153,7 +154,7 @@ def process_behavior_instance(instance: str, obj: Any) -> None:
                         Thread(target=triggerScript, args=[obj]).start()
             else:
                 if "start_at" in obj.configuration["when_extended"] and "time_point" in obj.configuration["when_extended"]["start_at"] and obj.configuration["when_extended"]["start_at"]["time_point"]["type"] == "time":
-                    triggerTime = obj.configuration["when_extended"]["start_at"]["time_point"]["time"]
+                    triggerTime: dict[str, int] = obj.configuration["when_extended"]["start_at"]["time_point"]["time"]
                     time_object = time(
                         hour=triggerTime["hour"],
                         minute=triggerTime["minute"],
@@ -167,7 +168,7 @@ def process_behavior_instance(instance: str, obj: Any) -> None:
                 obj.active = True
                 Thread(target=triggerScript, args=[obj]).start()
 
-def process_smart_scene(smartscene: str, obj: Any) -> None:
+def process_smart_scene(smartscene: str, obj: SmartScene.SmartScene) -> None:
     """
     Process and execute the smart scene based on its configuration.
 
@@ -177,7 +178,8 @@ def process_smart_scene(smartscene: str, obj: Any) -> None:
     """
     if hasattr(obj, "timeslots"):
         sunset_slot = -1
-        sunset = bridgeConfig["sensors"]["1"].config["sunset"] if "lat" in bridgeConfig["sensors"]["1"].protocol_cfg else "21:00:00"
+        sensor_obj: Sensor.Sensor = bridgeConfig["sensors"]["1"]
+        sunset = sensor_obj.config["sunset"] if "lat" in sensor_obj.protocol_cfg else "21:00:00"
         slots = deepcopy(obj.timeslots)
         if hasattr(obj, "recurrence"):
             if datetime.now().strftime("%A").lower() not in obj.recurrence:
@@ -211,12 +213,12 @@ def process_smart_scene(smartscene: str, obj: Any) -> None:
             if obj.state == "active":
                 if active_timeslot == len(obj.timeslots) - 1:
                     logging.info(f"stop smart_scene: {obj.name}")
-                    group = findGroup(obj.group["rid"])
+                    group: Group.Group = findGroup(obj.group["rid"])
                     group.setV1Action(state={"on": False})
                 else:
                     logging.info(f"execute smart_scene: {obj.name} scene: {obj.active_timeslot}")
                     putDict = {"recall": {"action": "active", "duration": obj.speed}, "controlled_service": "smart_scene"}
-                    target_object = getObject(obj.timeslots[active_timeslot]["target"]["rtype"], obj.timeslots[active_timeslot]["target"]["rid"])
+                    target_object: Scene.Scene = getObject(obj.timeslots[active_timeslot]["target"]["rtype"], obj.timeslots[active_timeslot]["target"]["rid"])
                     target_object.activate(putDict)
 
 def runScheduler() -> None:
@@ -225,18 +227,21 @@ def runScheduler() -> None:
     """
     while True:
         for schedule, obj in bridgeConfig["schedules"].items():
+            obj: Schedule.Schedule = obj
             try:
                 process_schedule(schedule, obj)
             except Exception as e:
                 logging.info(f"Exception while processing the schedule {schedule} | {e}")
 
         for instance, obj in bridgeConfig["behavior_instance"].items():
+            obj: BehaviorInstance.BehaviorInstance = obj
             try:
                 process_behavior_instance(instance, obj)
             except Exception as e:
                 logging.info(f"Exception while processing the behavior_instance {obj.name} | {e}")
 
         for smartscene, obj in bridgeConfig["smart_scene"].items():
+            obj: SmartScene.SmartScene = obj
             try:
                 process_smart_scene(smartscene, obj)
             except Exception as e:

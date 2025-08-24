@@ -3,7 +3,7 @@ import socket
 import json
 import uuid
 from subprocess import Popen, PIPE
-from typing import Dict, List, Tuple, Union, Optional
+from typing import List, Tuple, Union, Optional, Any
 
 import logManager
 import configManager
@@ -12,14 +12,15 @@ import paho.mqtt.publish as publish
 import time
 
 from functions.colors import convert_rgb_xy, convert_xy
+from HueObjects import Light, Group, ApiUser, EntertainmentConfiguration
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-cieTolerance = 0.03  # new frames will be ignored if the color change is smaller than this value
-briTolerance = 16  # new frames will be ignored if the brightness change is smaller than this value
-lastAppliedFrame: Dict[str, Dict[str, Union[List[float], int]]] = {}
-YeelightConnections: Dict[str, 'YeelightConnection'] = {}
+cieTolerance: float = 0.03  # new frames will be ignored if the color change is smaller than this value
+briTolerance: int = 16  # new frames will be ignored if the brightness change is smaller than this value
+lastAppliedFrame: dict[str, dict[str, Union[List[float], int]]] = {}
+YeelightConnections: dict[str, 'YeelightConnection'] = {}
 
 def skipSimilarFrames(light: str, color: List[float], brightness: int) -> int:
     """
@@ -55,32 +56,34 @@ def getObject(v2uuid: str) -> Optional[object]:
         Optional[object]: The light object if found, None otherwise.
     """
     for key, obj in bridgeConfig["lights"].items():
+        obj: Light.Light = obj
         if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + 'entertainment')) == v2uuid:
             return obj
     logging.info("Element not found!")
     return None
 
-def findGradientStrip(group: object) -> Union[object, str]:
+def findGradientStrip(group: Group.Group) -> Union[object, str]:
     """
     Find a gradient strip light in the group.
 
     Args:
-        group (object): The group object containing lights.
+        group (Group.Group): The group object containing lights.
 
     Returns:
         Union[object, str]: The gradient strip light object if found, "not found" otherwise.
     """
     for light in group.lights:
-        if light().modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
-            return light()
+        light: Light.Light = light()
+        if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
+            return light
     return "not found"
 
-def get_hue_entertainment_group(light: object, groupname: str) -> int:
+def get_hue_entertainment_group(light, groupname: str) -> int:
     """
     Get the entertainment group ID for a given light and group name.
 
     Args:
-        light (object): The light object.
+        light : The light object.
         groupname (str): The name of the group.
 
     Returns:
@@ -88,7 +91,7 @@ def get_hue_entertainment_group(light: object, groupname: str) -> int:
     """
     try:
         group = requests.get(f"http://{light.protocol_cfg['ip']}/api/{light.protocol_cfg['hueUser']}/groups/", timeout=3)
-        groups = group.json()
+        groups: dict[str, dict[str, Any]] = group.json()
         for i, grp in groups.items():
             if grp["name"] == groupname and grp["type"] == "Entertainment" and light.protocol_cfg["id"] in grp["lights"]:
                 logging.debug(f"Found corresponding entertainment group with id {i} for light {light.name}")
@@ -97,18 +100,18 @@ def get_hue_entertainment_group(light: object, groupname: str) -> int:
         logging.error(f"Error fetching entertainment group: {e}")
     return -1
 
-def entertainmentService(group: object, user: object) -> None:
+def entertainmentService(group: EntertainmentConfiguration.EntertainmentConfiguration, user: ApiUser.ApiUser) -> None:
     """
     Start the entertainment service for a group and user.
 
     Args:
-        group (object): The group object.
-        user (object): The user object.
+        group (EntertainmentConfiguration): The group object.
+        user (ApiUser): The user object.
     """
     logging.debug(f"User: {user.username}")
     logging.debug(f"Key: {user.client_key}")
-    bridgeConfig["groups"][group.id_v1].stream["owner"] = user.username
-    bridgeConfig["groups"][group.id_v1].state = {"all_on": True, "any_on": True}
+    group.stream["owner"] = user.username
+    group.state = {"all_on": True, "any_on": True}
     lights_v2 = []
     lights_v1 = {}
     hueGroup = -1
@@ -117,14 +120,17 @@ def entertainmentService(group: object, user: object) -> None:
     non_UDP_update_counter = 0
 
     for light in group.lights:
-        lights_v1[int(light().id_v1)] = light()
-        if light().protocol == "hue" and (hueGroup := get_hue_entertainment_group(light(), group.name)) != -1:
-            hueGroupLights[int(light().protocol_cfg["id"])] = []
-        bridgeConfig["lights"][light().id_v1].state.update({"mode": "streaming", "on": True, "colormode": "xy"})
+        light: Light.Light = light()
+        lights_v1[int(light.id_v1)] = light
+        if light.protocol == "hue" and (hueGroup := get_hue_entertainment_group(light, group.name)) != -1:
+            hueGroupLights[int(light.protocol_cfg["id"])] = []
+        if light.protocol == "govee":
+            light.setV1State({"on": True, "bri": 255})
+        light.state.update({"mode": "streaming", "on": True, "colormode": "xy"})
 
     v2LightNr = {}
     for channel in group.getV2Api()["channels"]:
-        lightObj = getObject(channel["members"][0]["service"]["rid"])
+        lightObj: Light.Light = getObject(channel["members"][0]["service"]["rid"])
         if lightObj:
             v2LightNr[lightObj.id_v1] = v2LightNr.get(lightObj.id_v1, -1) + 1
             lights_v2.append({"light": lightObj, "lightNr": v2LightNr[lightObj.id_v1]})
@@ -141,18 +147,18 @@ def entertainmentService(group: object, user: object) -> None:
         if not h._connected:
             hueGroupLights = {}
 
-    init = False
-    frameBites = 10
-    frameID = 1
-    initMatchBytes = 0
-    host_ip = bridgeConfig["config"]["ipaddress"]
+    init: bool = False
+    frameBites: int = 10
+    frameID: int = 1
+    initMatchBytes: int = 0
+    host_ip: str = bridgeConfig["config"]["ipaddress"]
     p.stdout.read(1)  # read one byte so the init function will correctly detect the frameBites
 
     try:
-        while bridgeConfig["groups"][group.id_v1].stream["active"]:
+        while group.stream["active"]:
             new_frame_time = time.time()
             if not init:
-                readByte = p.stdout.read(1)
+                readByte: bytes = p.stdout.read(1)
                 logging.debug(readByte)
                 if readByte in b'HueStream':
                     initMatchBytes += 1
@@ -165,17 +171,17 @@ def entertainmentService(group: object, user: object) -> None:
                     init = True
                 frameID += 1
             else:
-                data = p.stdout.read(frameBites)
-                nativeLights = {}
-                esphomeLights = {}
-                mqttLights = []
-                wledLights = {}
-                non_UDP_lights = []
+                data: bytes = p.stdout.read(frameBites)
+                nativeLights: dict[int, Light.Light] = {}
+                esphomeLights: dict[int, Light.Light] = {}
+                mqttLights: list[Light.Light] = []
+                wledLights: dict[int, Light.Light] = {}
+                non_UDP_lights: list[Light.Light] = []
 
                 if data[:9].decode('utf-8') == "HueStream":
                     i = 0
-                    apiVersion = 0
-                    counter = 0
+                    apiVersion: int = 0
+                    counter: int = 0
                     if data[9] == 1:
                         i = 16
                         apiVersion = 1
@@ -185,11 +191,11 @@ def entertainmentService(group: object, user: object) -> None:
                         apiVersion = 2
                         counter = len(group.getV2Api()["channels"]) * 7 + 52
 
-                    channels = {}
+                    channels: dict[int, int] = {}
                     while i < counter:
-                        light = None
+                        light: Light.Light | None = None
                         r, g, b = 0, 0, 0
-                        bri = 0
+                        bri: int = 0
                         if apiVersion == 1:
                             channels[data[i+1] * 256 + data[i+2]] = channels.get(data[i+1] * 256 + data[i+2], -1) + 1
                             if data[i] == 0:
@@ -233,7 +239,7 @@ def entertainmentService(group: object, user: object) -> None:
                         if proto in ["native", "native_multi", "native_single"]:
                             nativeLights.setdefault(light.protocol_cfg["ip"], {})
                             if apiVersion == 1:
-                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
+                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004", "LCX006"]:
                                     if data[i] == 1:
                                         nativeLights[light.protocol_cfg["ip"]][data[i+1] * 256 + data[i+2]] = [r, g, b]
                                     else:
@@ -242,7 +248,7 @@ def entertainmentService(group: object, user: object) -> None:
                                 else:
                                     nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
                             elif apiVersion == 2:
-                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004"]:
+                                if light.modelid in ["LCX001", "LCX002", "LCX003", "915005987201", "LCX004", "LCX006"]:
                                     nativeLights[light.protocol_cfg["ip"]][lights_v2[data[i]]["lightNr"]] = [r, g, b]
                                 else:
                                     nativeLights[light.protocol_cfg["ip"]][light.protocol_cfg["light_nr"] - 1] = [r, g, b]
@@ -336,20 +342,22 @@ def entertainmentService(group: object, user: object) -> None:
                         h.disconnect()
                     except UnboundLocalError:
                         pass
+
     except socket.timeout as e:
         logging.error(f"Entertainment Service timed out: {e}")
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
     finally:
         p.kill()
-        bridgeConfig["groups"][group.id_v1].stream["owner"] = None
+        group.stream["owner"] = None
         try:
             h.disconnect()
         except UnboundLocalError:
             pass
-        bridgeConfig["groups"][group.id_v1].stream["active"] = False
+        group.stream["active"] = False
         for light in group.lights:
-            bridgeConfig["lights"][light().id_v1].state["mode"] = "homeautomation"
+            light: Light.Light = light()
+            light.state["mode"] = "homeautomation"
         logging.info("Entertainment service stopped")
 
 def enableMusic(ip: str, host_ip: str) -> None:
@@ -583,12 +591,12 @@ class HueConnection:
         except:
             pass
 
-    def send(self, lights: Dict[int, List[int]], hueGroup: int) -> None:
+    def send(self, lights: dict[int, List[int]], hueGroup: int) -> None:
         """
         Send light data to the Hue bridge.
 
         Args:
-            lights (Dict[int, List[int]]): The light data to send.
+            lights (dict[int, List[int]]): The light data to send.
             hueGroup (int): The entertainment group ID.
         """
         arr = bytearray("HueStream", 'ascii')

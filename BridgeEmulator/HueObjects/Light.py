@@ -6,23 +6,23 @@ from HueObjects import genV2Uuid, incProcess, v1StateToV2, generate_unique_id, v
 from datetime import datetime, timezone
 from copy import deepcopy
 from time import sleep
-from typing import Dict, Any, List, Optional
+from typing import Any, List, Optional
 
 logging = logManager.logger.get_logger(__name__)
 
 class Light:
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self.name: str = data["name"]
         self.modelid: str = data["modelid"]
         self.id_v1: str = data["id_v1"]
         self.id_v2: str = data.get("id_v2", genV2Uuid())
         self.uniqueid: str = data.get("uniqueid", generate_unique_id())
-        self.state: Dict[str, Any] = data.get("state", deepcopy(lightTypes[self.modelid]["state"]))
+        self.state: dict[str, Any] = data.get("state", deepcopy(lightTypes[self.modelid]["state"]))
         self.protocol: str = data.get("protocol", "dummy")
-        self.config: Dict[str, Any] = data.get("config", deepcopy(lightTypes[self.modelid]["config"]))
-        self.protocol_cfg: Dict[str, Any] = data.get("protocol_cfg", {})
+        self.config: dict[str, Any] = data.get("config", deepcopy(lightTypes[self.modelid]["config"]))
+        self.protocol_cfg: dict[str, Any] = data.get("protocol_cfg", {})
         self.streaming: bool = False
-        self.dynamics: Dict[str, Any] = deepcopy(lightTypes[self.modelid]["dynamics"])
+        self.dynamics: dict[str, Any] = deepcopy(lightTypes[self.modelid]["dynamics"])
         self.effect: str = "no_effect"
         self.function: str = data.get("function", "mixed")
         self.controlled_service: str = data.get("controlled_service", "manual")
@@ -42,7 +42,7 @@ class Light:
         self._send_stream_event({"id": self.getV2Entertainment()["id"], "type": "entertainment"}, "delete")
         logging.info(f"{self.name} light was destroyed.")
 
-    def update_attr(self, newdata: Dict[str, Any]) -> None:
+    def update_attr(self, newdata: dict[str, Any]) -> None:
         for key, value in newdata.items():
             updateAttribute = getattr(self, key, None)
             if isinstance(updateAttribute, dict):
@@ -52,7 +52,7 @@ class Light:
                 setattr(self, key, value)
         self._send_stream_event(self.getDevice(), "update")
 
-    def getV1Api(self) -> Dict[str, Any]:
+    def getV1Api(self) -> dict[str, Any]:
         result = deepcopy(lightTypes[self.modelid]["v1_static"])
         result["config"] = self.config
         result["state"] = {"on": self.state["on"]}
@@ -77,7 +77,7 @@ class Light:
         result["uniqueid"] = self.uniqueid
         return result
 
-    def updateLightState(self, state: Dict[str, Any]) -> None:
+    def updateLightState(self, state: dict[str, Any]) -> None:
         if "xy" in state and "xy" in self.state:
             self.state["colormode"] = "xy"
         elif "ct" in state and "ct" in self.state:
@@ -85,7 +85,7 @@ class Light:
         elif ("hue" in state or "sat" in state) and "hue" in self.state:
             self.state["colormode"] = "hs"
 
-    def setV1State(self, state: Dict[str, Any], advertise: bool = True) -> None:
+    def setV1State(self, state: dict[str, Any], advertise: bool = True) -> None:
         if "lights" not in state:
             state = incProcess(self.state, state)
             self.updateLightState(state)
@@ -124,7 +124,7 @@ class Light:
                     v2State = v1StateToV2(light_state)
                     self.genStreamEvent(v2State)
 
-    def setV2State(self, state: Dict[str, Any]) -> None:
+    def setV2State(self, state: dict[str, Any]) -> None:
         v1State = v2StateToV1(state)
         if "effects_v2" in state and "action" in state["effects_v2"]:
             v1State["effect"] = state["effects_v2"]["action"]["effect"]
@@ -157,7 +157,7 @@ class Light:
         self._send_stream_event(streamMessage["data"][0], "update")
         self._send_stream_event(self.getDevice(), "update")
 
-    def _send_stream_event(self, data: Dict[str, Any], event_type: str) -> None:
+    def _send_stream_event(self, data: dict[str, Any], event_type: str) -> None:
         streamMessage = {
             "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [data],
@@ -167,7 +167,7 @@ class Light:
         }
         StreamEvent(streamMessage)
 
-    def getDevice(self) -> Dict[str, Any]:
+    def getDevice(self) -> dict[str, Any]:
         result = {
             "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')),
             "id_v1": f"/lights/{self.id_v1}",
@@ -188,7 +188,7 @@ class Light:
         result["product_data"]["model_id"] = self.modelid
         return result
 
-    def getZigBee(self) -> Dict[str, Any]:
+    def getZigBee(self) -> dict[str, Any]:
         return {
             "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'zigbee_connectivity')),
             "id_v1": f"/lights/{self.id_v1}",
@@ -198,10 +198,10 @@ class Light:
             "type": "zigbee_connectivity"
         }
 
-    def getBridgeHome(self) -> Dict[str, str]:
+    def getBridgeHome(self) -> dict[str, str]:
         return {"rid": self.id_v2, "rtype": "light"}
 
-    def getV2Api(self) -> Dict[str, Any]:
+    def getV2Api(self) -> dict[str, Any]:
         result = {
             "alert": {"action_values": ["breathe"]},
             "dynamics": self.dynamics,
@@ -269,7 +269,7 @@ class Light:
 
         return result
 
-    def getV2Entertainment(self) -> Dict[str, Any]:
+    def getV2Entertainment(self) -> dict[str, Any]:
         entertainmenUuid = str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment'))
         result = {
             "equalizer": True,
@@ -307,10 +307,10 @@ class Light:
 
         return result
 
-    def getObjectPath(self) -> Dict[str, str]:
+    def getObjectPath(self) -> dict[str, str]:
         return {"resource": "lights", "id": self.id_v1}
 
-    def dynamicScenePlay(self, palette: Dict[str, List[Dict[str, Any]]], index: int) -> None:
+    def dynamicScenePlay(self, palette: dict[str, List[dict[str, Any]]], index: int) -> None:
         logging.debug(f"Start Dynamic scene play for {self.name}")
         if "dynamic_palette" in self.dynamics["status_values"]:
             self.dynamics["status"] = "dynamic_palette"
@@ -353,7 +353,7 @@ class Light:
             logging.debug("Step forward dynamic scene " + self.name)
         logging.debug("Dynamic Scene " + self.name + " stopped.")
 
-    def save(self) -> Dict[str, Any]:
+    def save(self) -> dict[str, Any]:
         result = {"id_v2": self.id_v2, "name": self.name, "modelid": self.modelid, "uniqueid": self.uniqueid, "function": self.function,
                   "state": self.state, "config": self.config, "protocol": self.protocol, "protocol_cfg": self.protocol_cfg}
         return result

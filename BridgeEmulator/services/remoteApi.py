@@ -1,39 +1,43 @@
 import base64
 import json
 from time import sleep
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 import requests
 
+import configManager
 import logManager
 
+bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
-def runRemoteApi(BIND_IP: str, config: Dict[str, Any]) -> None:
+def runRemoteApi() -> None:
     """
     Runs the remote API service to communicate with the remote server.
 
     Args:
         BIND_IP (str): The IP address to bind to.
-        config (Dict[str, Any]): Configuration dictionary containing API keys and settings.
+        config (dict[str, Any]): Configuration dictionary containing API keys and settings.
     """
+    BIND_IP = configManager.runtimeConfig.arg["BIND_IP"]
+    config = bridgeConfig["config"]
     ip = "localhost" if BIND_IP == '' else BIND_IP
     url = 'https://remote.diyhue.org/devices'
-    
+
     try:
         api_key = base64.urlsafe_b64encode(bytes(config["Hue Essentials key"], "utf8")).decode("utf-8")
     except KeyError:
         logging.error("Configuration missing 'Hue Essentials key'")
         return
-    
-    def send_request(method: str, address: str, body: Optional[Dict[str, Any]] = None) -> None:
+
+    def send_request(method: str, address: str, body: Optional[dict[str, Any]] = None) -> None:
         """
         Sends a request to the bridge and posts the response to the remote server.
 
         Args:
             method (str): HTTP method ('GET', 'POST', 'PUT').
             address (str): The address to send the request to.
-            body (Optional[Dict[str, Any]], optional): The body of the request for POST and PUT methods.
+            body (Optional[dict[str, Any]], optional): The body of the request for POST and PUT methods.
         """
         try:
             if method == 'GET':
@@ -45,13 +49,13 @@ def runRemoteApi(BIND_IP: str, config: Dict[str, Any]) -> None:
             else:
                 logging.debug(f"Unsupported method: {method}")
                 return
-            
+
             requests.post(f'{url}?apikey={api_key}', timeout=5, json=json.loads(bridgeReq.text))
         except requests.RequestException as e:
             logging.error(f"Error sending request to bridge: {e}")
         except json.JSONDecodeError as e:
             logging.error(f"Error decoding JSON response from bridge: {e}")
-    
+
     while config.get("Remote API enabled", False):
         try:
             response = requests.get(f'{url}?apikey={api_key}', timeout=35)

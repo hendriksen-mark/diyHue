@@ -1,21 +1,22 @@
 import logManager
 import configManager
 
-from datetime import datetime, time
+from datetime import datetime
 from threading import Thread
 from time import sleep
 import requests
-from typing import List, Tuple, Union, Dict, Any
+from typing import List, Tuple, Union, Any
+from HueObjects import Rule, Sensor, Rule
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-def evaluate_condition(condition: Dict[str, Any], device: Any, current_time: datetime) -> Tuple[bool, int, List[str]]:
+def evaluate_condition(condition: dict[str, Any], device: Any, current_time: datetime) -> Tuple[bool, int, List[str]]:
     """
     Evaluate a single condition for a rule.
 
     Args:
-        condition (Dict[str, Any]): The condition to evaluate.
+        condition (dict[str, Any]): The condition to evaluate.
         device (Any): The device to check the condition against.
         current_time (datetime): The current time.
 
@@ -70,7 +71,7 @@ def evaluate_time_condition(value: str) -> bool:
         return time_start <= now_time or now_time <= time_end
     return False
 
-def checkRuleConditions(rule: Any, device: Any, current_time: datetime, ignore_ddx: bool = False) -> Union[Tuple[bool, int, List[str]], Tuple[bool]]:
+def checkRuleConditions(rule: Rule.Rule, device: Any, current_time: datetime, ignore_ddx: bool = False) -> Union[Tuple[bool, int, List[str]], Tuple[bool]]:
     """
     Check all conditions for a rule.
 
@@ -97,7 +98,7 @@ def checkRuleConditions(rule: Any, device: Any, current_time: datetime, ignore_d
 
     return [True, ddx, ddx_sensor] if device_found else [False]
 
-def ddxRecheck(rule: Any, device: Any, current_time: datetime, ddx_delay: int, ddx_sensor: List[str]) -> None:
+def ddxRecheck(rule: Rule.Rule, device: Any, current_time: datetime, ddx_delay: int, ddx_sensor: List[str]) -> None:
     """
     Recheck a ddx rule after a delay.
 
@@ -125,12 +126,12 @@ def ddxRecheck(rule: Any, device: Any, current_time: datetime, ddx_delay: int, d
             elif action["method"] == "PUT":
                 requests.put(f"http://localhost/api/local{action['address']}", json=action["body"], timeout=5)
 
-def threadActions(actionsToExecute: List[Dict[str, Any]]) -> None:
+def threadActions(actionsToExecute: List[dict[str, Any]]) -> None:
     """
     Execute actions in a separate thread.
 
     Args:
-        actionsToExecute (List[Dict[str, Any]]): The actions to execute.
+        actionsToExecute (List[dict[str, Any]]): The actions to execute.
     """
     sleep(0.2)
     for action in actionsToExecute:
@@ -154,6 +155,7 @@ def rulesProcessor(device: Any, current_time: datetime) -> None:
     bridgeConfig["config"]["localtime"] = current_time.strftime("%Y-%m-%dT%H:%M:%S") #required for operator dx to address /config/localtime
     actionsToExecute = []
     for key, rule in bridgeConfig["rules"].items():
+        rule: Rule.Rule = rule
         if rule.status == "enabled":
             rule_result = checkRuleConditions(rule, device, current_time)
             if rule_result[0]:

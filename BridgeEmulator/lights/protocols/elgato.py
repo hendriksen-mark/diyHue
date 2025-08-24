@@ -9,7 +9,7 @@ logging = logManager.logger.get_logger(__name__)
 
 discovered_lights = []
 
-def on_mdns_discover(zeroconf, service_type, name, state_change):
+def on_mdns_discover(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
     """
     Callback function for mDNS discovery.
     """
@@ -20,7 +20,7 @@ def on_mdns_discover(zeroconf, service_type, name, state_change):
             discovered_lights.append([addresses[0], name])
             logging.debug('<Elgato> mDNS device discovered: ' + addresses[0])
 
-def discover(detectedLights, elgato_ips):
+def discover(detectedLights: list, elgato_ips: list) -> None:
     """
     Discover Elgato lights using mDNS and fallback to IP addresses if necessary.
     """
@@ -66,7 +66,7 @@ def discover(detectedLights, elgato_ips):
 
     detectedLights.extend(lights)
 
-def translate_range(value, old_min, old_max, new_min, new_max):
+def translate_range(value: float, old_min: float, old_max: float, new_min: float, new_max: float) -> int:
     """
     Translate a value from one range to another.
     """
@@ -75,7 +75,7 @@ def translate_range(value, old_min, old_max, new_min, new_max):
     scaled_value = (((value - old_min) * new_range) / old_range) + new_min
     return int(max(min(scaled_value, new_max), new_min))
 
-def set_light(light, data):
+def set_light(light, data: dict) -> None:
     """
     Set the state of the light.
     """
@@ -97,7 +97,7 @@ def set_light(light, data):
         response = requests.put(f"http://{light.protocol_cfg['ip']}:9123/elgato/lights", data=json_data, headers={'Content-type': 'application/json'}, timeout=3)
         return response.text
 
-def get_light_state(light):
+def get_light_state(light) -> dict:
     """
     Get the current state of the light.
     """

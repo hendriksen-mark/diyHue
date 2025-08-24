@@ -1,16 +1,17 @@
 import logManager
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import List, Any
+from HueObjects import ApiUser
 
 logging = logManager.logger.get_logger(__name__)
 
 class Rule:
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         self.name: str = data["name"]
         self.id_v1: str = data["id_v1"]
-        self.actions: List[Dict[str, Any]] = data["actions"] if "actions" in data else []
-        self.conditions: List[Dict[str, Any]] = data["conditions"] if "conditions" in data else []
-        self.owner: str = data["owner"]
+        self.actions: List[dict[str, Any]] = data["actions"] if "actions" in data else []
+        self.conditions: List[dict[str, Any]] = data["conditions"] if "conditions" in data else []
+        self.owner: ApiUser.ApiUser = data["owner"]
         self.status: str = data["status"] if "status" in data else "enabled"
         self.recycle: bool = data["recycle"] if "recycle" in data else False
         self.created: str = data["created"] if "created" in data else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
@@ -20,16 +21,16 @@ class Rule:
     def __del__(self):
         logging.info(f"Rule '{self.name}' was destroyed.")
 
-    def add_actions(self, action: Dict[str, Any]) -> None:
+    def add_actions(self, action: dict[str, Any]) -> None:
         self.actions.append(action)
 
-    def add_conditions(self, condition: Dict[str, Any]) -> None:
+    def add_conditions(self, condition: dict[str, Any]) -> None:
         self.conditions.append(condition)
 
-    def getObjectPath(self) -> Dict[str, str]:
+    def getObjectPath(self) -> dict[str, str]:
         return {"resource": "rules", "id": self.id_v1}
 
-    def getV1Api(self) -> Dict[str, Any]:
+    def getV1Api(self) -> dict[str, Any]:
         result = {
             "name": self.name,
             "owner": self.owner.username,
@@ -43,7 +44,7 @@ class Rule:
         }
         return result
 
-    def update_attr(self, newdata: Dict[str, Any]) -> None:
+    def update_attr(self, newdata: dict[str, Any]) -> None:
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
             if isinstance(updateAttribute, dict):
@@ -52,5 +53,5 @@ class Rule:
             else:
                 setattr(self, key, value)
 
-    def save(self) -> Dict[str, Any]:
+    def save(self) -> dict[str, Any]:
         return self.getV1Api()

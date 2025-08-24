@@ -2,6 +2,7 @@ import asyncio
 import colorsys
 import json
 import socket
+from typing import Any
 
 from kasa import SmartLightStrip, Discover, TPLinkSmartHomeProtocol
 
@@ -42,7 +43,7 @@ class KL430LightStrip(SmartLightStrip):
             multi_color[index] = [index, index, color[0], color[1], brightness, 2501]'''
 
 
-def create_gradient(color: list, brightness):
+def create_gradient(color: list, brightness: int) -> list:
     multi_color = [[0, 0, 0, 0, 0, 0]] * 16
     """
     Works but not good xD
@@ -81,14 +82,14 @@ def create_gradient(color: list, brightness):
 
     return multi_color
 
-def get_gradiant_state(multi_color):
+def get_gradiant_state(multi_color: list) -> dict:
     state = {"on_off": 1}
     state["groups"] = multi_color
 
     return state
 
 
-def set_bri(multi_color, bri, ip):
+def set_bri(multi_color: list, bri: int, ip: str) -> None:
     for i in range(0, len(multi_color)):
         multi_color[i][4] = bri
     payload = get_gradiant_state(multi_color)
@@ -96,7 +97,7 @@ def set_bri(multi_color, bri, ip):
     send_request(ip, payload)
 
 
-def rgb_to_hsv(r, g, b):
+def rgb_to_hsv(r: int, g: int, b: int) -> list[int]:
     temp = colorsys.rgb_to_hsv(r, g, b)
     h = int(temp[0] * 360)
     s = int(temp[1] * 100)
@@ -104,14 +105,14 @@ def rgb_to_hsv(r, g, b):
     return [h, s, v]
 
 
-def generate_light_name(base_name, light_nr):
+def generate_light_name(base_name: str, light_nr: int) -> str:
     # Light name can only contain 32 characters
     suffix = ' %s' % light_nr
     return '%s%s' % (base_name[:32 - len(suffix)], suffix)
 
 
 # Detects only Kl430 but other Kasa devices should work to
-def discover(detectedLights):
+def discover(detectedLights: list) -> None:
     logging.debug('Kasa discovery started')
     devices: dict = asyncio.run(Discover.discover(target="192.168.0.255"))
 
@@ -130,7 +131,7 @@ def discover(detectedLights):
                                        "protocol_cfg": protocol_cfg})
 
 
-def translateRange(value, inMin, inMax, outMin, outMax):
+def translateRange(value: int, inMin: int, inMax: int, outMin: int, outMax: int) -> int:
     # colortemp 2051 used as indicator for color mode
     value = ((value - inMin) / (inMax - inMin)) * (outMax - outMin)
     out = value + outMin
@@ -139,7 +140,7 @@ def translateRange(value, inMin, inMax, outMin, outMax):
     return out
 
 
-def build_request(command, state, protocol=None):
+def build_request(command: str, state: dict, protocol: str = None) -> bytes:
     """
     Args:
         state: parameters
@@ -165,7 +166,7 @@ def build_request(command, state, protocol=None):
     return bytestream
 
 
-def send_request(target, request):
+def send_request(target: str, request: bytes):
     global old_request
     if old_request == request:
         return
@@ -180,13 +181,13 @@ def send_request(target, request):
     s.close()
 
 
-def send_debug(target, request):
+def send_debug(target: str, request: bytes):
     port = 7890
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.sendto(request, (target, port))
 
 
-def set_light(light, data):
+def set_light(light, data: dict[str, Any]) -> None:
     # strip = KL430LightStrip(light.protocol_cfg["ip"])
 
     gradient = data.get("gradient")

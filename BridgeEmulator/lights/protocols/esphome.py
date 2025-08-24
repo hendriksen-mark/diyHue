@@ -2,7 +2,7 @@ import json
 import requests
 import logManager
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb, rgbBrightness
-from typing import List, Dict, Any
+from typing import List, Any
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -37,7 +37,7 @@ def addRequest(request_data: str, data_type: str, new_data: Any) -> str:
     separator = "&" if "?" in request_data else "?"
     return f"{request_data}{separator}{data_type}={new_data}"
 
-def getLightType(light: Dict[str, Any], data: Dict[str, Any]) -> str:
+def getLightType(light, data: dict[str, Any]) -> str:
     """
     Determine the type of light based on the model and data.
 
@@ -81,7 +81,7 @@ def is_json(content: str) -> bool:
         return False
     return True
 
-def discover(detectedLights: List[Dict[str, Any]], device_ips: List[str]) -> None:
+def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> None:
     """
     Discover ESPHome devices on the network.
 
@@ -106,7 +106,7 @@ def discover(detectedLights: List[Dict[str, Any]], device_ips: List[str]) -> Non
         except requests.RequestException as e:
             logging.info(f"ip {ip} is unknown device: {e}")
 
-def get_device_properties(ip: str, device_name: str, mac: str, ct_boost: str, rgb_boost: str) -> tuple[Dict[str, Any], str]:
+def get_device_properties(ip: str, device_name: str, mac: str, ct_boost: str, rgb_boost: str) -> tuple[dict[str, Any], str]:
     """
     Get the properties of the device.
 
@@ -147,7 +147,7 @@ def get_device_properties(ip: str, device_name: str, mac: str, ct_boost: str, rg
         return properties, "LOM001"
     raise ValueError("Unknown device")
 
-def set_light(light: Dict[str, Any], data: Dict[str, Any], rgb: List[int] = None) -> None:
+def set_light(light, data: dict[str, Any], rgb: List[int] = None) -> None:
     """
     Set the state of the light.
 
@@ -175,7 +175,7 @@ def set_light(light: Dict[str, Any], data: Dict[str, Any], rgb: List[int] = None
             request_data = addRequest(request_data, "transition", data.get('transitiontime', 4) / 10)
     postRequest(light.protocol_cfg["ip"], request_data)
 
-def handle_brightness_and_color(light: Dict[str, Any], data: Dict[str, Any], request_data: str, ct_boost: int, rgb_boost: int, rgb: List[int] = None) -> str:
+def handle_brightness_and_color(light, data: dict[str, Any], request_data: str, ct_boost: int, rgb_boost: int, rgb: List[int] = None) -> str:
     """
     Handle the brightness and color settings for the light.
 
@@ -210,7 +210,7 @@ def handle_brightness_and_color(light: Dict[str, Any], data: Dict[str, Any], req
             request_data = addRequest(request_data, "b", color[2])
     return request_data
 
-def adjust_brightness(light: Dict[str, Any], brightness: int, ct_boost: int, rgb_boost: int) -> int:
+def adjust_brightness(light, brightness: int, ct_boost: int, rgb_boost: int) -> int:
     """
     Adjust the brightness based on the light model and boost values.
 
@@ -231,7 +231,7 @@ def adjust_brightness(light: Dict[str, Any], brightness: int, ct_boost: int, rgb
         brightness += rgb_boost
     return min(brightness, 255)
 
-def get_light_state(light: Dict[str, Any]) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of the light.
 
@@ -258,7 +258,7 @@ def get_light_state(light: Dict[str, Any]) -> Dict[str, Any]:
         state = get_toggle_state(ip)
     return state
 
-def get_rgbw_state(ip: str) -> Dict[str, Any]:
+def get_rgbw_state(ip: str) -> dict[str, Any]:
     """
     Get the state of an RGBW light.
 
@@ -279,7 +279,7 @@ def get_rgbw_state(ip: str) -> Dict[str, Any]:
         state.update({"xy": convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b'])), "bri": int(color_device['brightness']), "colormode": "xy"})
     return state
 
-def get_ct_state(ip: str) -> Dict[str, Any]:
+def get_ct_state(ip: str) -> dict[str, Any]:
     """
     Get the state of a CT light.
 
@@ -293,7 +293,7 @@ def get_ct_state(ip: str) -> Dict[str, Any]:
     white_device = white_response.json()
     return {"on": white_device['state'] == 'ON', "ct": int(white_device['color_temp']), "bri": int(white_device['brightness']), "colormode": "ct"} if white_device['state'] == 'ON' else {"on": False}
 
-def get_rgb_state(ip: str) -> Dict[str, Any]:
+def get_rgb_state(ip: str) -> dict[str, Any]:
     """
     Get the state of an RGB light.
 
@@ -307,7 +307,7 @@ def get_rgb_state(ip: str) -> Dict[str, Any]:
     color_device = color_response.json()
     return {"on": color_device['state'] == 'ON', "xy": convert_rgb_xy(int(color_device['color']['r']), int(color_device['color']['g']), int(color_device['color']['b'])), "bri": int(color_device['brightness']), "colormode": "xy"} if color_device['state'] == 'ON' else {"on": False}
 
-def get_dimmable_state(ip: str) -> Dict[str, Any]:
+def get_dimmable_state(ip: str) -> dict[str, Any]:
     """
     Get the state of a dimmable light.
 
@@ -321,7 +321,7 @@ def get_dimmable_state(ip: str) -> Dict[str, Any]:
     dimmable_device = dimmable_response.json()
     return {"on": dimmable_device['state'] == 'ON', "bri": int(dimmable_device['brightness'])} if dimmable_device['state'] == 'ON' else {"on": False}
 
-def get_toggle_state(ip: str) -> Dict[str, Any]:
+def get_toggle_state(ip: str) -> dict[str, Any]:
     """
     Get the state of a toggle light.
 

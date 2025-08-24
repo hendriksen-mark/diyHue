@@ -1,7 +1,6 @@
 import requests
 import subprocess
 from datetime import datetime, timezone
-from typing import List
 import os
 from pathlib import Path
 

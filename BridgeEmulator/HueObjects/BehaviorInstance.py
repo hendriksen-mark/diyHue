@@ -2,17 +2,17 @@ import uuid
 import logManager
 from HueObjects import genV2Uuid, StreamEvent
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 logging = logManager.logger.get_logger(__name__)
 
 class BehaviorInstance:
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self.id_v2: str = data.get("id", genV2Uuid())
         self.id_v1: str = self.id_v2  # used for config save
         self.name: Optional[str] = data["metadata"].get("name")
         self.meta_type: Optional[str] = data["metadata"].get("type")
-        self.configuration: Dict[str, Any] = data["configuration"]
+        self.configuration: dict[str, Any] = data["configuration"]
         self.enabled: bool = data.get("enabled", False)
         self.active: bool = data.get("active", False)
         self.script_id: str = data.get("script_id", "")
@@ -23,12 +23,12 @@ class BehaviorInstance:
         self._send_stream_event({"id": self.id_v2, "type": "behavior_instance"}, "delete")
         logging.info(f"{self.name} behaviour instance was destroyed.")
 
-    def activate(self, data: Dict[str, Any]) -> None:
+    def activate(self, data: dict[str, Any]) -> None:
         if "recall" in data and data["recall"].get("action") == "deactive":
             self.active = False
 
-    def getV2Api(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {
+    def getV2Api(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
             "configuration": self.configuration,
             "dependees": [],
             "enabled": self.enabled,
@@ -57,7 +57,7 @@ class BehaviorInstance:
 
         return result
 
-    def update_attr(self, newdata: Dict[str, Any]) -> None:
+    def update_attr(self, newdata: dict[str, Any]) -> None:
         for key, value in newdata.items():
             if key == "metadata" and "name" in value:
                 self.name = value["name"]
@@ -70,7 +70,7 @@ class BehaviorInstance:
                 setattr(self, key, value)
         self._send_stream_event(self.getV2Api(), "update")
 
-    def _send_stream_event(self, data: Dict[str, Any], event_type: str) -> None:
+    def _send_stream_event(self, data: dict[str, Any], event_type: str) -> None:
         streamMessage = {
             "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [data],
@@ -79,7 +79,7 @@ class BehaviorInstance:
         }
         StreamEvent(streamMessage)
 
-    def save(self) -> Dict[str, Any]:
+    def save(self) -> dict[str, Any]:
         return {
             "id": self.id_v2,
             "metadata": {"name": self.name},

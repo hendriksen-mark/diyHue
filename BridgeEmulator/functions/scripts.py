@@ -2,20 +2,21 @@ import logManager
 import configManager
 from time import sleep
 from random import randrange
-from typing import Union, Dict, Any, List, Callable
+from typing import Union, Any, List, Callable
+from HueObjects import Group, Scene, BehaviorInstance
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-def findScene(element: Dict[str, Any]) -> Union[Dict[str, Any], bool]:
+def findScene(element: dict[str, Any]) -> Union[dict[str, Any], bool]:
     """
     Find a scene based on the provided element.
 
     Args:
-        element (Dict[str, Any]): The element to find the scene for.
+        element (dict[str, Any]): The element to find the scene for.
 
     Returns:
-        Union[Dict[str, Any], bool]: The found scene or False if not found.
+        Union[dict[str, Any], bool]: The found scene or False if not found.
     """
     for scene, obj in bridgeConfig["scenes"].items():
         if element["group"]["rtype"] == "room" and obj.id_v2 == element["recall"]["rid"] and obj.group().getV2Room()["id"] == element["group"]["rid"]:
@@ -24,7 +25,7 @@ def findScene(element: Dict[str, Any]) -> Union[Dict[str, Any], bool]:
             return obj
     return False
 
-def findGroup(id_v2: str) -> Union[Dict[str, Any], bool]:
+def findGroup(id_v2: str) -> Union[dict[str, Any], bool]:
     """
     Find a group based on the provided id_v2.
 
@@ -32,19 +33,19 @@ def findGroup(id_v2: str) -> Union[Dict[str, Any], bool]:
         id_v2 (str): The id_v2 to find the group for.
 
     Returns:
-        Union[Dict[str, Any], bool]: The found group or False if not found.
+        Union[dict[str, Any], bool]: The found group or False if not found.
     """
     for group, obj in bridgeConfig["groups"].items():
         if obj.type != "Entertainment" and (obj.getV2Room()["id"] == id_v2 or obj.getV2Zone()["id"] == id_v2):
             return obj
     return False
 
-def handleWakeUp(behavior_instance: Dict[str, Any]) -> None:
+def handleWakeUp(behavior_instance: BehaviorInstance.BehaviorInstance) -> None:
     """
     Handle the Wake Up routine.
 
     Args:
-        behavior_instance (Dict[str, Any]): The behavior instance to handle.
+        behavior_instance (BehaviorInstance.BehaviorInstance): The behavior instance to handle.
     """
     if behavior_instance.active and "turn_lights_off_after" in behavior_instance.configuration:
         logging.debug("End Wake Up routine")
@@ -59,7 +60,7 @@ def handleWakeUp(behavior_instance: Dict[str, Any]) -> None:
         logging.debug("Start Wake Up routine")
         for element in behavior_instance.configuration["where"]:
             if "group" in element:
-                group = findGroup(element["group"]["rid"])
+                group: Group.Group = findGroup(element["group"]["rid"])
                 group.setV1Action(state={"ct": 250, "bri": 1})
                 sleep(1)
                 group.setV1Action(state={"on": True})
@@ -67,17 +68,17 @@ def handleWakeUp(behavior_instance: Dict[str, Any]) -> None:
                 behavior_instance.active = "turn_lights_off_after" in behavior_instance.configuration
                 logging.debug("Finish Wake Up")
 
-def handleGoToSleep(behavior_instance: Dict[str, Any]) -> None:
+def handleGoToSleep(behavior_instance: BehaviorInstance.BehaviorInstance) -> None:
     """
     Handle the Go to Sleep routine.
 
     Args:
-        behavior_instance (Dict[str, Any]): The behavior instance to handle.
+        behavior_instance (BehaviorInstance.BehaviorInstance): The behavior instance to handle.
     """
     logging.debug("Start Go to Sleep " + behavior_instance.name)
     for element in behavior_instance.configuration["where"]:
         if "group" in element:
-            group = findGroup(element["group"]["rid"])
+            group: Group.Group = findGroup(element["group"]["rid"])
             group.setV1Action(state={"ct": 500})
             sleep(1)
             group.setV1Action(state={"bri": 1, "transitiontime": behavior_instance.configuration["fade_out_duration"]["seconds"] * 10})
@@ -87,23 +88,23 @@ def handleGoToSleep(behavior_instance: Dict[str, Any]) -> None:
             behavior_instance.active = False
             logging.debug("Finish Go to Sleep")
 
-def handleActivateScene(behavior_instance: Dict[str, Any]) -> None:
+def handleActivateScene(behavior_instance: BehaviorInstance.BehaviorInstance) -> None:
     """
     Handle the Activate Scene routine.
 
     Args:
-        behavior_instance (Dict[str, Any]): The behavior instance to handle.
+        behavior_instance (BehaviorInstance.BehaviorInstance): The behavior instance to handle.
     """
     if behavior_instance.active and "end_at" in behavior_instance.configuration["when_extended"]:
         logging.debug("End routine " + behavior_instance.name)
         for element in behavior_instance.configuration["what"]:
             if "group" in element:
-                scene = findScene(element)
+                scene: Scene.Scene = findScene(element)
                 if scene:
                     logging.info("Deactivate scene " + scene.name)
                     putDict = {"recall": {"action": "deactivate"}}
                     scene.activate(putDict)
-                group = findGroup(element["group"]["rid"])
+                group: Group.Group = findGroup(element["group"]["rid"])
                 logging.info("Turn off group " + group.name)
                 group.setV1Action({"on": False})
                 behavior_instance.active = False
@@ -129,12 +130,12 @@ def handleActivateScene(behavior_instance: Dict[str, Any]) -> None:
                             group.setV1Action(state={"bri": 254, "transitiontime": transition_minutes * 60 * 10})
                 behavior_instance.active = "end_at" in behavior_instance.configuration["when_extended"]
 
-def handleCountdownTimer(behavior_instance: Dict[str, Any]) -> None:
+def handleCountdownTimer(behavior_instance: BehaviorInstance.BehaviorInstance) -> None:
     """
     Handle the Countdown Timer routine.
 
     Args:
-        behavior_instance (Dict[str, Any]): The behavior instance to handle.
+        behavior_instance (BehaviorInstance.BehaviorInstance): The behavior instance to handle.
     """
     logging.debug("Start Countdown Timer " + behavior_instance.name)
     secondsToCount = sum(
@@ -144,8 +145,8 @@ def handleCountdownTimer(behavior_instance: Dict[str, Any]) -> None:
     sleep(secondsToCount)
     for element in behavior_instance.configuration["what"]:
         if "group" in element:
-            scene = findScene(element)
-            group = findGroup(element["group"]["rid"])
+            scene: Scene.Scene = findScene(element)
+            group: Group.Group = findGroup(element["group"]["rid"])
             if scene:
                 logging.info("Activate scene " + scene.name + " to group " + group.name)
                 putDict = {"recall": {"action": "active"}}
@@ -157,17 +158,17 @@ def handleCountdownTimer(behavior_instance: Dict[str, Any]) -> None:
     behavior_instance.update_attr({"enabled": False})
     logging.debug("Finish Countdown Timer " + behavior_instance.name)
 
-def triggerScript(behavior_instance: Dict[str, Any]) -> None:
+def triggerScript(behavior_instance: BehaviorInstance.BehaviorInstance) -> None:
     """
     Trigger the appropriate script based on the behavior instance.
 
     Args:
-        behavior_instance (Dict[str, Any]): The behavior instance to handle.
+        behavior_instance (BehaviorInstance.BehaviorInstance): The behavior instance to handle.
     """
     if "when_extended" in behavior_instance.configuration and "randomization" in behavior_instance.configuration["when_extended"]:
         sleep(randrange(behavior_instance.configuration["when_extended"]["randomization"]["minutes"] * 60))
 
-    script_handlers: Dict[str, Callable[[Dict[str, Any]], None]] = {
+    script_handlers: dict[str, Callable[[BehaviorInstance.BehaviorInstance], None]] = {
         "ff8957e3-2eb9-4699-a0c8-ad2cb3ede704": handleWakeUp,
         "7e571ac6-f363-42e1-809a-4cbf6523ed72": handleGoToSleep,
         "7238c707-8693-4f19-9095-ccdc1444d228": handleActivateScene,
@@ -178,12 +179,12 @@ def triggerScript(behavior_instance: Dict[str, Any]) -> None:
     if script_id in script_handlers:
         script_handlers[script_id](behavior_instance)
 
-def behaviorScripts() -> List[Dict[str, Any]]:
+def behaviorScripts() -> List[dict[str, Any]]:
     """
     Return the list of behavior scripts.
 
     Returns:
-        List[Dict[str, Any]]: The list of behavior scripts.
+        List[dict[str, Any]]: The list of behavior scripts.
     """
     return [{
       "configuration_schema": {

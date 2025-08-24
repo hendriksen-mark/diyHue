@@ -2,17 +2,17 @@ import json
 import logManager
 from subprocess import check_output
 from functions.colors import convert_rgb_xy, hsv_to_rgb
-from typing import Dict, Any, List
+from typing import Any, List
 
 logging = logManager.logger.get_logger(__name__)
 
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light: Any, data: dict[str, Any]) -> None:
     """
     Set the state of a Tradfri light.
 
     Args:
         light (Any): The light object containing protocol configuration.
-        data (Dict[str, Any]): The data to set on the light.
+        data (dict[str, Any]): The data to set on the light.
     """
     payload = {}
     url = "coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"])
@@ -63,7 +63,7 @@ def set_light(light: Any, data: Dict[str, Any]) -> None:
     cmd = ["coap-client-gnutls", "-B", "2", "-m", "put", "-u", light.protocol_cfg["identity"], "-k", light.protocol_cfg["psk"], "-e", "{ \"3311\": [" + json.dumps(payload) + "] }", url]
     check_output(cmd)
 
-def get_light_state(light: Any) -> Dict[str, Any]:
+def get_light_state(light: Any) -> dict[str, Any]:
     """
     Get the current state of a Tradfri light.
 
@@ -71,7 +71,7 @@ def get_light_state(light: Any) -> Dict[str, Any]:
         light (Any): The light object containing protocol configuration.
 
     Returns:
-        Dict[str, Any]: The current state of the light.
+        dict[str, Any]: The current state of the light.
     """
     state ={}
     cmd = ["coap-client-gnutls", "-B", "5", "-m", "get", "-u", light.protocol_cfg["identity"], "-k", light.protocol_cfg["psk"], "coaps://" + light.protocol_cfg["ip"] + ":5684/15001/" + str(light.protocol_cfg["id"])]
@@ -90,16 +90,16 @@ def get_light_state(light: Any) -> Dict[str, Any]:
 
     return state
 
-def discover(detectedLights: List[Dict[str, Any]], tradfriConfig: Dict[str, Any]) -> List[Dict[str, Any]]:
+def discover(detectedLights: List[dict[str, Any]], tradfriConfig: dict[str, Any]) -> List[dict[str, Any]]:
     """
     Discover Tradfri lights and add them to the detected lights list.
 
     Args:
-        detectedLights (List[Dict[str, Any]]): The list of detected lights.
-        tradfriConfig (Dict[str, Any]): The Tradfri configuration.
+        detectedLights (List[dict[str, Any]]): The list of detected lights.
+        tradfriConfig (dict[str, Any]): The Tradfri configuration.
 
     Returns:
-        List[Dict[str, Any]]: The updated list of detected lights.
+        List[dict[str, Any]]: The updated list of detected lights.
     """
     if "psk" in tradfriConfig:
         logging.debug("tradfri: <discover> invoked!")

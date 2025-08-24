@@ -1,11 +1,10 @@
 import logManager
 from services.homeAssistantWS import connect_if_required, latest_states
-from pprint import pprint
-from typing import Dict, Any
+from typing import Any
 
 logging = logManager.logger.get_logger(__name__)
 
-def translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state: Dict[str, Any], ha_state: Dict[str, Any]) -> Dict[str, Any]:
+def translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state: dict[str, Any], ha_state: dict[str, Any]) -> dict[str, Any]:
     """
     Translate Home Assistant state to Diy Hue state.
 
@@ -89,7 +88,7 @@ def translate_homeassistant_state_to_diyhue_state(existing_diy_hue_state: Dict[s
         logging.error(f"Error translating Home Assistant state to Diy Hue state: {e}")
         return existing_diy_hue_state
 
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of a light.
 
@@ -103,7 +102,7 @@ def set_light(light: Any, data: Dict[str, Any]) -> None:
     except Exception as e:
         logging.error(f"Error setting light state: {e}")
 
-def get_light_state(light: Any) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of a light.
 

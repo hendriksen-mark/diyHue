@@ -1,5 +1,6 @@
+from typing import Any
 # Define light definitions for discovery features and adding device data to config
-lightTypes = {}
+lightTypes: dict[str, Any] = {}
 
 ## Hue Color Bulb #1
 lightTypes["LCT001"] = {

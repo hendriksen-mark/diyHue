@@ -8,7 +8,9 @@ import os
 import sys
 import subprocess
 import tempfile
-import logging
+import logManager
+
+logging = logManager.logger.get_logger(__name__)
 
 def gen_cert_python(mac_address: str, config_path: str = "/opt/hue-emulator/config", running_path: str = "/opt/hue-emulator") -> bool:
     """
@@ -17,28 +19,31 @@ def gen_cert_python(mac_address: str, config_path: str = "/opt/hue-emulator/conf
     Args:
         mac_address (str): MAC address to use for certificate generation
         config_path (str): Path where the certificate will be stored
+        running_path (str): Path where the OpenSSL configuration file is located
         
     Returns:
         bool: True if certificate generation was successful, False otherwise
     """
     try:
         # Convert MAC address from hex to decimal for serial number
-        mac_clean = mac_address.strip('\u200e')
-        dec_serial = int(mac_clean, 16)
-        
+        mac_clean: str = mac_address.strip('\u200e').replace(':', '').lower()
+        if "fffe" not in mac_clean:
+            mac_clean: str = mac_clean[:6] + "fffe" + mac_clean[-6:]
+        dec_serial: int = int(mac_clean, 16)
+
         # Ensure config directory exists
         os.makedirs(config_path, exist_ok=True)
         
         # Create temporary files for private key and public certificate
         with tempfile.NamedTemporaryFile(mode='w', suffix='.key', delete=False) as private_key_file, \
              tempfile.NamedTemporaryFile(mode='w', suffix='.crt', delete=False) as public_cert_file:
-            
-            private_key_path = private_key_file.name
-            public_cert_path = public_cert_file.name
-        
+
+            private_key_path: str = private_key_file.name
+            public_cert_path: str = public_cert_file.name
+
         try:
             # OpenSSL command equivalent to the bash script
-            openssl_cmd = [
+            openssl_cmd: list[str] = [
                 'faketime', '2017-01-01 00:00:00',
                 'openssl', 'req', '-new', '-days', '7670',
                 '-config', f'{running_path}/openssl.conf',
@@ -52,11 +57,11 @@ def gen_cert_python(mac_address: str, config_path: str = "/opt/hue-emulator/conf
             ]
             
             # Execute the OpenSSL command
-            result = subprocess.run(openssl_cmd, capture_output=True, text=True, check=True)
-            
+            result: subprocess.CompletedProcess = subprocess.run(openssl_cmd, capture_output=True, text=True, check=True)
+
             # Combine private key and public certificate into cert.pem
-            cert_pem_path = os.path.join(config_path, 'cert.pem')
-            
+            cert_pem_path: str = os.path.join(config_path, 'cert.pem')
+
             with open(cert_pem_path, 'w') as cert_file:
                 # Write private key first
                 with open(private_key_path, 'r') as private_key:
@@ -98,13 +103,10 @@ def main():
         print("Usage: python3 genCert.py <mac_address> [config_path] [running_path]")
         print("Example: python3 genCert.py 001788fffe123456 /opt/hue-emulator/config /opt/hue-emulator")
         sys.exit(1)
-    
-    mac_address = sys.argv[1]
-    config_path = sys.argv[2] if len(sys.argv) > 2 else "/opt/hue-emulator/config"
-    running_path = sys.argv[3] if len(sys.argv) > 3 else "/opt/hue-emulator"
 
-    # Configure basic logging
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    mac_address: str = sys.argv[1]
+    config_path: str = sys.argv[2] if len(sys.argv) > 2 else "/opt/hue-emulator/config"
+    running_path: str = sys.argv[3] if len(sys.argv) > 3 else "/opt/hue-emulator"
 
     success = gen_cert_python(mac_address, config_path, running_path)
 

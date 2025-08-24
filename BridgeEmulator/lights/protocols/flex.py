@@ -2,11 +2,11 @@ import json
 import logManager
 import socket
 from functions.colors import convert_xy, rgbBrightness
-from typing import Dict, Any
+from typing import Any
 
 logging = logManager.logger.get_logger(__name__)
 
-def pretty_json(data: Dict[str, Any]) -> str:
+def pretty_json(data: dict[str, Any]) -> str:
     """
     Convert a dictionary to a pretty-printed JSON string.
 
@@ -37,7 +37,7 @@ def send_udp_message(msg: bytearray, ip: str, port: int = 48899) -> None:
     finally:
         sock.close()
 
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the light state based on the provided data.
 

@@ -1,6 +1,6 @@
 import logManager
 import json
-from typing import Dict, Any
+from typing import Any
 
 # External
 import paho.mqtt.publish as publish
@@ -10,16 +10,16 @@ from functions.colors import hsv_to_rgb, convert_xy
 
 logging = logManager.logger.get_logger(__name__)
 
-def create_payload(lightsData: Dict[str, Any], light: Any) -> Dict[str, Any]:
+def create_payload(lightsData: dict[str, Any], light) -> dict[str, Any]:
     """
     Create the payload for the MQTT message based on the light data.
 
     Args:
-        lightsData (Dict[str, Any]): The data for the lights.
+        lightsData (dict[str, Any]): The data for the lights.
         light (Any): The light object.
 
     Returns:
-        Dict[str, Any]: The payload for the MQTT message.
+        dict[str, Any]: The payload for the MQTT message.
     """
     payload = {"transition": 0.3}
     colorFromHsv = False
@@ -52,13 +52,13 @@ def create_payload(lightsData: Dict[str, Any], light: Any) -> Dict[str, Any]:
         payload['color'] = {'r': color[0], 'g': color[1], 'b': color[2]}
     return payload
 
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the light state via MQTT.
 
     Args:
-        light (Any): The light object.
-        data (Dict[str, Any]): The data to set the light state.
+        light : The light object.
+        data (dict[str, Any]): The data to set the light state.
     """
     messages = []
     lightsData = data.get("lights", {light.protocol_cfg["command_topic"]: data})
@@ -74,12 +74,12 @@ def set_light(light: Any, data: Dict[str, Any]) -> None:
         auth = {'username': mqtt_server["mqttUser"], 'password': mqtt_server["mqttPassword"]}
     publish.multiple(messages, hostname=mqtt_server["mqttServer"], port=mqtt_server["mqttPort"], auth=auth)
 
-def discover(mqtt_config: Dict[str, Any]) -> None:
+def discover(mqtt_config: dict[str, Any]) -> None:
     """
     Discover devices via MQTT.
 
     Args:
-        mqtt_config (Dict[str, Any]): The MQTT configuration.
+        mqtt_config (dict[str, Any]): The MQTT configuration.
     """
     if mqtt_config["enabled"]:
         logging.info("MQTT discovery called")

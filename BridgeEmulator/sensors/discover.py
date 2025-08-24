@@ -3,7 +3,7 @@ import configManager
 from HueObjects import Sensor
 import random
 from functions.core import nextFreeId
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -18,14 +18,14 @@ def generate_unique_id() -> str:
     rand_bytes = [random.randrange(0, 256) for _ in range(3)]
     return "00:17:88:01:03:%02x:%02x:%02x" % tuple(rand_bytes)
 
-def addHueMotionSensor(name: str, protocol: str, protocol_cfg: Dict[str, Any]) -> None:
+def addHueMotionSensor(name: str, protocol: str, protocol_cfg: dict[str, Any]) -> None:
     """
     Add a Hue motion sensor to the bridge configuration.
     
     Args:
         name (str): The name of the sensor.
         protocol (str): The protocol used by the sensor.
-        protocol_cfg (Dict[str, Any]): The protocol configuration.
+        protocol_cfg (dict[str, Any]): The protocol configuration.
     """
     try:
         uniqueid = generate_unique_id()
@@ -88,12 +88,12 @@ def addHueSwitch(uniqueid: str, sensorsType: str) -> Optional[Sensor.Sensor]:
         logging.error(f"Failed to add Hue switch: {e}")
         return None
 
-def addHueRotarySwitch(protocol_cfg: Dict[str, Any]) -> None:
+def addHueRotarySwitch(protocol_cfg: dict[str, Any]) -> None:
     """
     Add a Hue rotary switch to the bridge configuration.
     
     Args:
-        protocol_cfg (Dict[str, Any]): The protocol configuration.
+        protocol_cfg (dict[str, Any]): The protocol configuration.
     """
     try:
         uniqueid = generate_unique_id()

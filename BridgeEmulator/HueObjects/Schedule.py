@@ -1,15 +1,15 @@
 import logManager
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 logging = logManager.logger.get_logger(__name__)
 
 class Schedule:
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self.name: str = data.get("name", "schedule " + data["id_v1"])
         self.id_v1: str = data["id_v1"]
         self.description: str = data.get("description", "none")
-        self.command: Dict[str, Any] = data.get("command", {})
+        self.command: dict[str, Any] = data.get("command", {})
         self.localtime: Optional[str] = data.get("localtime")
         self.created: str = data.get("created", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"))
         self.status: str = data.get("status", "disabled")
@@ -23,8 +23,8 @@ class Schedule:
     def __del__(self) -> None:
         logging.info(self.name + " schedule was destroyed.")
 
-    def getV1Api(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
+    def getV1Api(self) -> dict[str, Any]:
+        result: dict[str, Any] = {}
         result["name"] = self.name
         result["description"] = self.description
         result["command"] = self.command
@@ -40,7 +40,7 @@ class Schedule:
         result["recycle"] = self.recycle
         return result
 
-    def update_attr(self, newdata: Dict[str, Any]) -> None:
+    def update_attr(self, newdata: dict[str, Any]) -> None:
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
             if isinstance(updateAttribute, dict):
@@ -52,8 +52,8 @@ class Schedule:
                 logging.debug("enable timer " + self.name)
                 self.starttime = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
-    def getObjectPath(self) -> Dict[str, str]:
+    def getObjectPath(self) -> dict[str, str]:
         return {"resource": "schedules", "id": self.id_v1}
 
-    def save(self) -> Dict[str, Any]:
+    def save(self) -> dict[str, Any]:
         return self.getV1Api()

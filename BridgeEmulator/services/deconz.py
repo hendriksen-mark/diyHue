@@ -3,7 +3,7 @@ import weakref
 from datetime import datetime, timezone
 from threading import Thread
 from time import sleep
-from typing import Union, Dict, Any
+from typing import Union, Any
 
 import requests
 from ws4py.client.threadedclient import WebSocketClient
@@ -17,7 +17,7 @@ from sensors.discover import addHueMotionSensor
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
-devicesIds: Dict[str, Dict[str, weakref.ReferenceType]] = {"sensors": {}, "lights": {}}
+devicesIds: dict[str, dict[str, weakref.ReferenceType]] = {"sensors": {}, "lights": {}}
 motionSensors = ["TRADFRI motion sensor", "lumi.sensor_motion", "lumi.vibration.aq1"]
 
 def getObject(resource: str, id: str) -> Union[Sensor.Sensor, bool]:

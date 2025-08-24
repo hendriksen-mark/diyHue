@@ -1,16 +1,15 @@
-import json
 import logManager
 import requests
-from typing import Dict, Any, List, Optional
+from typing import Any, List, Optional
 
 logging = logManager.logger.get_logger(__name__)
 
-def build_url(light: Dict[str, Any], endpoint: str = "state") -> str:
+def build_url(light, endpoint: str = "state") -> str:
     """
     Build the URL for the Hue light API.
 
     Args:
-        light (Dict[str, Any]): The light configuration dictionary.
+        light: The light object.
         endpoint (str): The API endpoint to access. Defaults to "state".
 
     Returns:
@@ -18,13 +17,13 @@ def build_url(light: Dict[str, Any], endpoint: str = "state") -> str:
     """
     return f"http://{light.protocol_cfg['ip']}/api/{light.protocol_cfg['hueUser']}/lights/{light.protocol_cfg['id']}/{endpoint}"
 
-def set_light(light: Dict[str, Any], data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of the light.
 
     Args:
-        light (Dict[str, Any]): The light configuration dictionary.
-        data (Dict[str, Any]): The data to set on the light.
+        light: The light object.
+        data (dict[str, Any]): The data to set on the light.
     """
     url = build_url(light)
     payload = {}
@@ -47,15 +46,15 @@ def set_light(light: Dict[str, Any], data: Dict[str, Any]) -> None:
     if color:
         requests.put(url, json=color, timeout=3)
 
-def get_light_state(light: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def get_light_state(light) -> Optional[dict[str, Any]]:
     """
     Get the current state of the light.
 
     Args:
-        light (Dict[str, Any]): The light configuration dictionary.
+        light: The light object.
 
     Returns:
-        Optional[Dict[str, Any]]: The state of the light, or None if an error occurred.
+        Optional[dict[str, Any]]: The state of the light, or None if an error occurred.
     """
     try:
         state = requests.get(build_url(light, ""), timeout=3)
@@ -65,13 +64,13 @@ def get_light_state(light: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         logging.error("Error getting light state: %s", e)
         return None
 
-def discover(detectedLights: List[Dict[str, Any]], credentials: Dict[str, str]) -> None:
+def discover(detectedLights: List[dict[str, Any]], credentials: dict[str, str]) -> None:
     """
     Discover Hue lights and add them to the detectedLights list.
 
     Args:
-        detectedLights (List[Dict[str, Any]]): The list to append discovered lights to.
-        credentials (Dict[str, str]): The credentials for accessing the Hue Bridge.
+        detectedLights (List[dict[str, Any]]): The list to append discovered lights to.
+        credentials (dict[str, str]): The credentials for accessing the Hue Bridge.
     """
     if "hueUser" in credentials and len(credentials["hueUser"]) >= 32:
         logging.debug("hue: <discover> invoked!")

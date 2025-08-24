@@ -1,13 +1,14 @@
+from re import L
 import requests
-from typing import Dict, Any
+from typing import Any
 
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of the light.
 
     Args:
-        light (Any): The light object containing protocol configuration.
-        data (Dict[str, Any]): The data to set on the light.
+        light : The light object containing protocol configuration.
+        data (dict[str, Any]): The data to set on the light.
     """
     url = "http://" + light.protocol_cfg["ip"] + "/set?light=" + str(light.protocol_cfg["light_nr"])
     method = 'GET'
@@ -18,15 +19,15 @@ def set_light(light: Any, data: Dict[str, Any]) -> None:
             url += "&" + key + "=" + str(value)
     requests.get(url, timeout=3)
 
-def get_light_state(light: Any) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of the light.
 
     Args:
-        light (Any): The light object containing protocol configuration.
+        light : The light object containing protocol configuration.
 
     Returns:
-        Dict[str, Any]: The current state of the light.
+        dict[str, Any]: The current state of the light.
     """
     state = requests.get("http://"+light.protocol_cfg["ip"]+"/get?light=" + str(light.protocol_cfg["light_nr"]), timeout=3)
     return state.json()

@@ -2,17 +2,17 @@ import json
 import socket
 import logManager
 from functions.colors import convert_xy, hsv_to_rgb
-from typing import Dict, Any
+from typing import Any
 
 logging = logManager.logger.get_logger(__name__)
 
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light: Any, data: dict[str, Any]) -> None:
     """
     Set the light state based on the provided data.
 
     Args:
         light (Any): The light object containing protocol configuration and state.
-        data (Dict[str, Any]): The data dictionary containing light state parameters.
+        data (dict[str, Any]): The data dictionary containing light state parameters.
     """
     ip = light.protocol_cfg["ip"]
     payload = {}

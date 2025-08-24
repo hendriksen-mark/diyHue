@@ -4,22 +4,22 @@ import socket
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Tuple, Union, Generator
+from typing import List, Tuple, Union, Generator
 from lights.protocols import tpkasa, wled, mqtt, hyperion, yeelight, hue, deconz, native_multi, tasmota, shelly, esphome, tradfri, elgato, govee
 from services import homeAssistantWS
-from HueObjects import Light, StreamEvent
+from HueObjects import Light, Group, StreamEvent
 from functions.core import nextFreeId
 from lights.light_types import lightTypes
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-def pretty_json(data: Union[Dict, List]) -> str:
+def pretty_json(data: Union[dict, List]) -> str:
     """
     Convert a dictionary or list to a pretty-printed JSON string.
 
     Args:
-        data (Union[Dict, List]): The data to convert.
+        data (Union[dict, List]): The data to convert.
 
     Returns:
         str: The pretty-printed JSON string.
@@ -81,7 +81,7 @@ def find_hosts(port: int) -> List[str]:
     """
     return [f'{host}:{port}' for host, port in iter_ips(port) if scanHost(host, port) == 0]
 
-def addNewLight(modelid: str, name: str, protocol: str, protocol_cfg: Dict) -> Union[int, bool]:
+def addNewLight(modelid: str, name: str, protocol: str, protocol_cfg: dict) -> Union[int, bool]:
     """
     Add a new light to the bridge configuration.
 
@@ -89,14 +89,14 @@ def addNewLight(modelid: str, name: str, protocol: str, protocol_cfg: Dict) -> U
         modelid (str): The model ID of the light.
         name (str): The name of the light.
         protocol (str): The protocol used by the light.
-        protocol_cfg (Dict): The protocol configuration.
+        protocol_cfg (dict): The protocol configuration.
 
     Returns:
         Union[int, bool]: The ID of the new light or False if the model ID is not found.
     """
     newLightID = nextFreeId(bridgeConfig, "lights")
     if modelid in lightTypes:
-        light = lightTypes[modelid]
+        light: dict = lightTypes[modelid]
         light.update({
             "name": name,
             "id_v1": newLightID,
@@ -106,22 +106,23 @@ def addNewLight(modelid: str, name: str, protocol: str, protocol_cfg: Dict) -> U
         })
         newObject = Light.Light(light)
         bridgeConfig["lights"][newLightID] = newObject
-        bridgeConfig["groups"]["0"].add_light(newObject)
+        groupZero: Group.Group = bridgeConfig["groups"]["0"]
+        groupZero.add_light(newObject)
         rooms = [obj.id_v2 for obj in bridgeConfig["groups"].values()]
         lights = [obj.id_v2 for obj in bridgeConfig["lights"].values()]
-        bridgeConfig["groups"]["0"].groupZeroStream(rooms, lights)
+        groupZero.groupZeroStream(rooms, lights)
         configManager.bridgeConfig.save_config(backup=False, resource="lights")
         return newLightID
     return False
 
-def manualAddLight(ip: str, protocol: str, config: Dict = {}) -> None:
+def manualAddLight(ip: str, protocol: str, config: dict = {}) -> None:
     """
     Manually add a light by IP address.
 
     Args:
         ip (str): The IP address of the light.
         protocol (str): The protocol used by the light.
-        config (Dict, optional): Additional configuration for the light. Defaults to {}.
+        config (dict, optional): Additional configuration for the light. Defaults to {}.
     """
     modelid = config.get("lightModelID", "LCT015")
     name = config.get("lightName", "New Light")
@@ -156,13 +157,13 @@ def discoveryEvent() -> None:
     }
     StreamEvent(streamMessage)
 
-def update_light_ip(lightObj: Light.Light, light: Dict) -> None:
+def update_light_ip(lightObj: Light.Light, light: dict) -> None:
     """
     Update the IP address of a light.
 
     Args:
         lightObj (Light.Light): The light object to update.
-        light (Dict): The new light data.
+        light (dict): The new light data.
     """
     if "ip" in light["protocol_cfg"]:
         lightObj.protocol_cfg["ip"] = light["protocol_cfg"]["ip"]
@@ -178,13 +179,13 @@ def update_light_ip(lightObj: Light.Light, light: Dict) -> None:
         })
     logging.info(f"Update IP/config for light {light['name']}")
 
-def is_light_matching(lightObj: Light.Light, light: Dict) -> bool:
+def is_light_matching(lightObj: Light.Light, light: dict) -> bool:
     """
     Check if a light matches an existing light object.
 
     Args:
         lightObj (Light.Light): The existing light object.
-        light (Dict): The new light data.
+        light (dict): The new light data.
 
     Returns:
         bool: True if the light matches, False otherwise.
@@ -223,12 +224,12 @@ def get_device_ips() -> List[str]:
         return [host for ports in bridgeConfig["config"]["port"]["ports"] for host in find_hosts(ports)]
     return find_hosts(80)
 
-def discover_lights(detectedLights: List[Dict], device_ips: List[str]) -> None:
+def discover_lights(detectedLights: List[dict], device_ips: List[str]) -> None:
     """
     Discover lights on the network.
 
     Args:
-        detectedLights (List[Dict]): A list to store detected lights.
+        detectedLights (List[dict]): A list to store detected lights.
         device_ips (List[str]): A list of device IP addresses to scan.
     """
     if bridgeConfig["config"]["mqtt"]["enabled"]:
@@ -269,12 +270,12 @@ def discover_lights(detectedLights: List[Dict], device_ips: List[str]) -> None:
     if bridgeConfig["config"]["govee"]["enabled"]:
         govee.discover(detectedLights)
 
-def scanForLights() -> Dict:  # scan for ESP8266 lights and strips
+def scanForLights() -> dict:  # scan for ESP8266 lights and strips
     """
     Scan for ESP8266 lights and strips.
 
     Returns:
-        Dict: The scan result.
+        dict: The scan result.
     """
     logging.info("scan for light")
     bridgeConfig["temp"]["scanResult"] = {"lastscan": "active"}
@@ -288,6 +289,7 @@ def scanForLights() -> Dict:  # scan for ESP8266 lights and strips
     for light in detectedLights:
         lightIsNew = True
         for lightObj in bridgeConfig["lights"].values():
+            lightObj: Light.Light = lightObj
             if lightObj.protocol == light["protocol"] and is_light_matching(lightObj, light):
                 update_light_ip(lightObj, light)
                 lightIsNew = False

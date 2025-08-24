@@ -1,17 +1,17 @@
 import json
 import logManager
 import requests
-from typing import Dict, List, Any
+from typing import List, Any
 
 logging = logManager.logger.get_logger(__name__)
 
-def set_light(light: Any, data: Dict[str, Any]) -> str:
+def set_light(light, data: dict[str, Any]) -> str:
     """
     Set the state of a light.
 
     Args:
-        light (Any): The light object containing protocol configuration.
-        data (Dict[str, Any]): The data to set the light state.
+        light : The light object containing protocol configuration.
+        data (dict[str, Any]): The data to set the light state.
 
     Returns:
         str: The response text or error message.
@@ -25,15 +25,15 @@ def set_light(light: Any, data: Dict[str, Any]) -> str:
         logging.error(f"Failed to set light state: {e}")
         return str(e)
 
-def get_light_state(light: Any) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the state of a light.
 
     Args:
-        light (Any): The light object containing protocol configuration.
+        light : The light object containing protocol configuration.
 
     Returns:
-        Dict[str, Any]: The current state of the light.
+        dict[str, Any]: The current state of the light.
     """
     try:
         response = requests.get(f"http://{light.protocol_cfg['ip']}/state?light={light.protocol_cfg['light_nr']}", timeout=3)
@@ -73,16 +73,16 @@ def is_json(content: str) -> bool:
         return False
     return True
 
-def discover(detectedLights: List[Dict[str, Any]], device_ips: List[str]) -> List[Dict[str, Any]]:
+def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> List[dict[str, Any]]:
     """
     Discover lights on the network.
 
     Args:
-        detectedLights (List[Dict[str, Any]]): The list to append detected lights.
+        detectedLights (List[dict[str, Any]]): The list to append detected lights.
         device_ips (List[str]): The list of device IPs to discover.
 
     Returns:
-        List[Dict[str, Any]]: The updated list of detected lights.
+        List[dict[str, Any]]: The updated list of detected lights.
     """
     logging.debug("native: <discover> invoked!")
     for ip in device_ips:

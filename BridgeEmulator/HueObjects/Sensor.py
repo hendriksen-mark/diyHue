@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from copy import deepcopy
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import logManager
 from sensors.sensor_types import sensorTypes
@@ -10,7 +10,7 @@ from HueObjects import genV2Uuid, StreamEvent
 logging = logManager.logger.get_logger(__name__)
 
 class Sensor:
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         if data["modelid"] in sensorTypes:
             sensor_type = sensorTypes[data["modelid"]][data["type"]]
             data.setdefault("manufacturername", sensor_type["static"]["manufacturername"])
@@ -24,20 +24,20 @@ class Sensor:
         data.setdefault("state", {})
         data["state"].setdefault("lastupdated", "none")
 
-        self.name = data["name"]
-        self.id_v1 = data["id_v1"]
-        self.id_v2 = data.get("id_v2", genV2Uuid())
-        self.config = data["config"]
-        self.modelid = data["modelid"]
-        self.manufacturername = data.get("manufacturername", "Philips")
-        self.protocol = data.get("protocol", "none")
-        self.protocol_cfg = data.get("protocol_cfg", {})
-        self.type = data["type"]
-        self.state = data["state"]
-        self.dxState = {state: datetime.now() for state in data["state"].keys()}
-        self.swversion = data.get("swversion")
-        self.recycle = data.get("recycle", False)
-        self.uniqueid = data.get("uniqueid")
+        self.name: str = data["name"]
+        self.id_v1: str = data["id_v1"]
+        self.id_v2: str = data.get("id_v2", genV2Uuid())
+        self.config: dict[str, Any] = data["config"]
+        self.modelid: str = data["modelid"]
+        self.manufacturername: str = data.get("manufacturername", "Philips")
+        self.protocol: str = data.get("protocol", "none")
+        self.protocol_cfg: dict[str, Any] = data.get("protocol_cfg", {})
+        self.type: str = data["type"]
+        self.state: dict[str, Any] = data["state"]
+        self.dxState: dict[str, datetime] = {state: datetime.now() for state in data["state"].keys()}
+        self.swversion: str = data.get("swversion")
+        self.recycle: bool = data.get("recycle", False)
+        self.uniqueid: str = data.get("uniqueid")
 
         if self.getDevice() is not None:
             streamMessage = {
@@ -61,10 +61,10 @@ class Sensor:
             StreamEvent(streamMessage)
         logging.info(self.name + " sensor was destroyed.")
 
-    def setV1State(self, state: Dict[str, Any]) -> None:
+    def setV1State(self, state: dict[str, Any]) -> None:
         self.state.update(state)
 
-    def getBridgeHome(self) -> Dict[str, str]:
+    def getBridgeHome(self) -> dict[str, str]:
         if self.modelid == "SML001":
             rtype = {
                 "ZLLPresence": "motion",
@@ -74,8 +74,8 @@ class Sensor:
             return {"rid": self.id_v2, "rtype": rtype}
         return {"rid": self.id_v2, "rtype": 'device'}
 
-    def getV1Api(self) -> Dict[str, Any]:
-        result = sensorTypes.get(self.modelid, {}).get(self.type, {}).get("static", {})
+    def getV1Api(self) -> dict[str, Any]:
+        result: dict[str, Any] = sensorTypes.get(self.modelid, {}).get(self.type, {}).get("static", {})
         result.update({
             "state": self.state,
             "config": self.config,
@@ -89,10 +89,10 @@ class Sensor:
         })
         return result
 
-    def getObjectPath(self) -> Dict[str, str]:
+    def getObjectPath(self) -> dict[str, str]:
         return {"resource": "sensors", "id": self.id_v1}
 
-    def getDevice(self) -> Optional[Dict[str, Any]]:
+    def getDevice(self) -> Optional[dict[str, Any]]:
         if self.modelid == "SML001" and self.type == "ZLLPresence":
             return {
                 "id": self.id_v2,
@@ -197,7 +197,7 @@ class Sensor:
             }
         return None
 
-    def getMotion(self) -> Optional[Dict[str, Any]]:
+    def getMotion(self) -> Optional[dict[str, Any]]:
         if self.modelid == "SML001" and self.type == "ZLLPresence":
             return {
                 "enabled": self.config["on"],
@@ -222,7 +222,7 @@ class Sensor:
             }
         return None
 
-    def getTemperature(self) -> Optional[Dict[str, Any]]:
+    def getTemperature(self) -> Optional[dict[str, Any]]:
         if self.modelid == "SML001" and self.type == "ZLLTemperature":
             return {
                 "enabled": self.config["on"],
@@ -242,7 +242,7 @@ class Sensor:
             }
         return None
 
-    def getLightlevel(self) -> Optional[Dict[str, Any]]:
+    def getLightlevel(self) -> Optional[dict[str, Any]]:
         if self.modelid == "SML001" and self.type == "ZLLLightLevel":
             return {
                 "enabled": self.config["on"],
@@ -262,7 +262,7 @@ class Sensor:
             }
         return None
 
-    def getZigBee(self) -> Optional[Dict[str, Any]]:
+    def getZigBee(self) -> Optional[dict[str, Any]]:
         if self.modelid == "SML001" and self.type != "ZLLPresence":
             return None
         if not self.uniqueid:
@@ -276,7 +276,7 @@ class Sensor:
             "status": "connected"
         }
 
-    def getButtons(self) -> Optional[Dict[str, Any]]:
+    def getButtons(self) -> Optional[dict[str, Any]]:
         if self.modelid in ["RWL022", "RWL021", "RWL020", "RDM002"] and self.type != "ZLLRelativeRotary":
             return [
                 {
@@ -304,7 +304,7 @@ class Sensor:
             ]
         return None
 
-    def getRotary(self) -> Optional[Dict[str, Any]]:
+    def getRotary(self) -> Optional[dict[str, Any]]:
         if self.modelid == "RDM002" and self.type == "ZLLRelativeRotary":
             return {
                 "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'relative_rotary')),
@@ -325,7 +325,7 @@ class Sensor:
             }
         return None
 
-    def getDevicePower(self) -> Optional[Dict[str, Any]]:
+    def getDevicePower(self) -> Optional[dict[str, Any]]:
         if "battery" in self.config:
             return {
                 "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device_power')),
@@ -339,7 +339,7 @@ class Sensor:
             }
         return None
 
-    def getContact(self) -> Optional[Dict[str, Any]]:
+    def getContact(self) -> Optional[dict[str, Any]]:
         if self.modelid == "SOC001":
             return {
                 "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'contact')),
@@ -353,7 +353,7 @@ class Sensor:
             }
         return None
 
-    def update_attr(self, newdata: Dict[str, Any]) -> None:
+    def update_attr(self, newdata: dict[str, Any]) -> None:
         if self.id_v1 == "1" and "config" in newdata:  # manage daylight sensor
             if "long" in newdata["config"] and "lat" in newdata["config"]:
                 self.config["configured"] = True
@@ -377,7 +377,7 @@ class Sensor:
         }
         StreamEvent(streamMessage)
 
-    def save(self) -> Dict[str, Any]:
+    def save(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "id_v1": self.id_v1,

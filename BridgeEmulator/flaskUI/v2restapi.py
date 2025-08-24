@@ -1,6 +1,9 @@
+from math import e
+from re import S
+from turtle import st
 import configManager
 import logManager
-from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstance, GeofenceClient, SmartScene, StreamEvent
+from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstance, GeofenceClient, SmartScene, ApiUser, Light, Sensor, StreamEvent
 import uuid
 import json
 import weakref
@@ -15,6 +18,7 @@ from datetime import datetime, timezone
 from functions.scripts import behaviorScripts
 from lights.discover import scanForLights
 from functions.daylightSensor import daylightSensor
+from typing import Any
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -60,9 +64,9 @@ def getObject(element, v2uuid):
 
 def authorizeV2(headers):
     if "hue-application-key" in headers and headers["hue-application-key"] in bridgeConfig["apiUsers"]:
-        bridgeConfig["apiUsers"][headers["hue-application-key"]
-                                 ].last_use_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-        return {"user": bridgeConfig["apiUsers"][headers["hue-application-key"]]}
+        user: ApiUser.ApiUser = bridgeConfig["apiUsers"][headers["hue-application-key"]]
+        user.last_use_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+        return {"user": user}
     return []
 
 def v2BridgeEntertainment():
@@ -153,12 +157,15 @@ def v2BridgeHome():
     result["services"] = []
     result["type"] = "bridge_home"
     for key, light in bridgeConfig["lights"].items():
+        light: Light.Light = light
         result["services"].append(light.getBridgeHome())
         result["children"].append({"rid": light.getDevice()["id"], "rtype": "device"})
     for key, group in bridgeConfig["groups"].items():
         if group.type == "Room":
+            group: Group.Group = group
             result["children"].append({"rid": group.getV2Room()["id"], "rtype": "room"})
     for key, sensor in bridgeConfig["sensors"].items():
+        sensor: Sensor.Sensor = sensor
         if sensor.getBridgeHome():
             result["services"].append(sensor.getBridgeHome())
     result["services"].append({"rid": bridgeConfig["groups"]["0"].id_v2 ,"rtype": "grouped_light"})
@@ -166,7 +173,7 @@ def v2BridgeHome():
 
 
 def v2Bridge():
-    bridge_id = bridgeConfig["config"]["bridgeid"]
+    bridge_id: str = bridgeConfig["config"]["bridgeid"]
     return {
         "bridge_id": bridge_id.lower(),
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'bridge')),
@@ -177,11 +184,12 @@ def v2Bridge():
     }
 
 def geoLocation():
+    sensor: Sensor.Sensor = bridgeConfig["sensors"]["1"]
     return {
         "id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridgeConfig["config"]["bridgeid"] + 'geolocation')),
-        "is_configured": bridgeConfig["sensors"]["1"].config["configured"],
+        "is_configured": sensor.config["configured"],
         "sun_today": {
-            "sunset_time": bridgeConfig["sensors"]["1"].config["sunset"] if "lat" in bridgeConfig["sensors"]["1"].protocol_cfg else "",
+            "sunset_time": sensor.config["sunset"] if "lat" in sensor.protocol_cfg else "",
             "day_type": "normal_day"
         },
         "type": "geolocation"
@@ -246,8 +254,10 @@ class ClipV2(Resource):
         # device
         data.append(v2BridgeDevice())
         for key, light in bridgeConfig["lights"].items():
+            light: Light.Light = light
             data.append(light.getDevice())
         for key, sensor in bridgeConfig["sensors"].items():
+            sensor: Sensor.Sensor = sensor
             if sensor.getDevice() is not None:
                 data.append(sensor.getDevice())
         # bridge
@@ -256,39 +266,50 @@ class ClipV2(Resource):
         # zigbee
         data.append(v2BridgeZigBee())
         for key, light in bridgeConfig["lights"].items():
+            light: Light.Light = light
             data.append(light.getZigBee())
         for key, sensor in bridgeConfig["sensors"].items():
+            sensor: Sensor.Sensor = sensor
             if sensor.getZigBee() is not None:
                 data.append(sensor.getZigBee())
         data.append(v2BridgeZigBeeDiscovery())
         # entertainment
         data.append(v2BridgeEntertainment())
         for key, light in bridgeConfig["lights"].items():
+            light: Light.Light = light
             data.append(light.getV2Entertainment())
         # scenes
         for key, scene in bridgeConfig["scenes"].items():
+            scene: Scene.Scene = scene
             data.append(scene.getV2Api())
         # smart_scene
         for key, smartscene in bridgeConfig["smart_scene"].items():
+            smartscene: SmartScene.SmartScene = smartscene
             data.append(smartscene.getV2Api())
         # lights
         for key, light in bridgeConfig["lights"].items():
+            light: Light.Light = light
             data.append(light.getV2Api())
         # room
         for key, group in bridgeConfig["groups"].items():
             if group.type == "Room":
+                group: Group.Group = group
                 data.append(group.getV2Room())
             elif group.type == "Zone":
+                group: Group.Group = group
                 data.append(group.getV2Zone())
         # behavior_instance
         for key, instance in bridgeConfig["behavior_instance"].items():
+            instance: BehaviorInstance.BehaviorInstance = instance
             data.append(instance.getV2Api())
         # entertainment_configuration
-        for key, group in bridgeConfig["groups"].items():
-            if group.type == "Entertainment":
-                data.append(group.getV2Api())
+        for key, e_group in bridgeConfig["groups"].items():
+            if e_group.type == "Entertainment":
+                e_group: EntertainmentConfiguration.EntertainmentConfiguration = e_group
+                data.append(e_group.getV2Api())
         # group
             else:
+                group: Group.Group = group
                 data.append(group.getV2GroupedLight())
         # bridge home
         data.append(v2BridgeHome())
@@ -297,6 +318,7 @@ class ClipV2(Resource):
         for script in behaviorScripts():
             data.append(script)
         for key, sensor in bridgeConfig["sensors"].items():
+            sensor: Sensor.Sensor = sensor
             motion = sensor.getMotion()
             if motion is not None:
                 data.append(motion)
@@ -329,46 +351,58 @@ class ClipV2Resource(Resource):
         response = {"data": [], "errors": []}
         if resource == "scene":
             for key, scene in bridgeConfig["scenes"].items():
+                scene: Scene.Scene = scene
                 response["data"].append(scene.getV2Api())
         elif resource == "smart_scene":
             for key, smartscene in bridgeConfig["smart_scene"].items():
+                smartscene: SmartScene.SmartScene = smartscene
                 response["data"].append(smartscene.getV2Api())
         elif resource == "light":
             for key, light in bridgeConfig["lights"].items():
+                light: Light.Light = light
                 response["data"].append(light.getV2Api())
         elif resource == "room":
             for key, group in bridgeConfig["groups"].items():
                 if group.type == "Room":
+                    group: Group.Group = group
                     response["data"].append(group.getV2Room())
         elif resource == "zone":
             for key, group in bridgeConfig["groups"].items():
                 if group.type == "Zone":
+                    group: Group.Group = group
                     response["data"].append(group.getV2Zone())
         elif resource == "grouped_light":
             for key, group in bridgeConfig["groups"].items():
+                group: Group.Group = group
                 response["data"].append(group.getV2GroupedLight())
         elif resource == "zigbee_connectivity":
             for key, light in bridgeConfig["lights"].items():
+                light: Light.Light = light
                 zigbee = light.getZigBee()
                 if zigbee is not None:
                     response["data"].append(zigbee)
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 zigbee = sensor.getZigBee()
                 if zigbee is not None:
                     response["data"].append(zigbee)
             response["data"].append(v2BridgeZigBee())  # the bridge
         elif resource == "entertainment":
             for key, light in bridgeConfig["lights"].items():
+                light: Light.Light = light
                 response["data"].append(light.getV2Entertainment())
             response["data"].append(v2BridgeEntertainment())
         elif resource == "entertainment_configuration":
-            for key, group in bridgeConfig["groups"].items():
-                if group.type == "Entertainment":
-                    response["data"].append(group.getV2Api())
+            for key, e_group in bridgeConfig["groups"].items():
+                if e_group.type == "Entertainment":
+                    e_group: EntertainmentConfiguration.EntertainmentConfiguration = e_group
+                    response["data"].append(e_group.getV2Api())
         elif resource == "device":
             for key, light in bridgeConfig["lights"].items():
+                light: Light.Light = light
                 response["data"].append(light.getDevice())
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 device = sensor.getDevice()
                 if device is not None:
                     response["data"].append(device)
@@ -387,6 +421,7 @@ class ClipV2Resource(Resource):
             response["data"].append(geoLocation())
         elif resource == "behavior_instance":
             for key, instance in bridgeConfig["behavior_instance"].items():
+                instance: BehaviorInstance.BehaviorInstance = instance
                 response["data"].append(instance.getV2Api())
         elif resource == "geofence_client":
             response["data"].append(v2GeofenceClient())
@@ -395,32 +430,38 @@ class ClipV2Resource(Resource):
                 response["data"].append(script)
         elif resource == "motion":
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 motion = sensor.getMotion()
                 if motion is not None:
                     response["data"].append(motion)
         elif resource == "device_power":
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 power = sensor.getDevicePower()
                 if power is not None:
                     response["data"].append(power)
         elif resource == "button":
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 buttons = sensor.getButtons()
                 if buttons is not None:
                     for button in buttons:
                         response["data"].append(button)
         elif resource == "relative_rotary":
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 rotarys = sensor.getRotary()
                 if rotarys is not None:
                     response["data"].append(rotarys)
         elif resource == "temperature":
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 temperature = sensor.getTemperature()
                 if temperature is not None:
                     response["data"].append(temperature)
         elif resource == "light_level":
             for key, sensor in bridgeConfig["sensors"].items():
+                sensor: Sensor.Sensor = sensor
                 lightlevel = sensor.getLightlevel()
                 if lightlevel is not None:
                     response["data"].append(lightlevel)
@@ -435,7 +476,7 @@ class ClipV2Resource(Resource):
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
             return "", 403
-        postDict = request.get_json(force=True)
+        postDict: dict[str, Any] = request.get_json(force=True)
         logging.info(postDict)
         newObject = None
         if resource == "scene":
@@ -576,11 +617,14 @@ class ClipV2ResourceId(Resource):
         if resource in ["scene", "light", "smart_scene"]:
             data.append(object.getV2Api())
         elif resource == "room":
-            data.append(object.getV2Room())
+            room: Group.Group = object
+            data.append(room.getV2Room())
         elif resource == "zone":
-            data.append(object.getV2Zone())
+            zone: Group.Group = object
+            data.append(zone.getV2Zone())
         elif resource == "grouped_light":
-            data.append(object.getV2GroupedLight())
+            grouped_light: Group.Group = object
+            data.append(grouped_light.getV2GroupedLight())
         elif resource == "device":
             data.append(object.getDevice())
         elif resource == "zigbee_connectivity":
@@ -588,23 +632,31 @@ class ClipV2ResourceId(Resource):
         elif resource == "zigbee_device_discovery":
             data.append(object.getZigBeeDiscovery())
         elif resource == "entertainment":
-            data.append(object.getV2Entertainment())
+            entertainment: Light.Light = object
+            data.append(entertainment.getV2Entertainment())
         elif resource == "entertainment_configuration":
-            data.append(object.getV2Api())
+            entertainment_configuration: EntertainmentConfiguration.EntertainmentConfiguration = object
+            data.append(entertainment_configuration.getV2Api())
         elif resource == "bridge":
             data.append(v2Bridge())
         elif resource == "motion":
-            data.append(object.getMotion())
+            motion: Sensor.Sensor = object
+            data.append(motion.getMotion())
         elif resource == "device_power":
-            data.append(object.getDevicePower())
+            device_power: Sensor.Sensor = object
+            data.append(device_power.getDevicePower())
         elif resource == "button":
-            data.append(object.getButtons())
+            button: Sensor.Sensor = object
+            data.append(button.getButtons())
         elif resource == "relative_rotary":
-            data.append(object.getRotary())
+            relative_rotary: Sensor.Sensor = object
+            data.append(relative_rotary.getRotary())
         elif resource == "temperature":
-            data.append(object.getTemperature())
+            temperature: Sensor.Sensor = object
+            data.append(temperature.getTemperature())
         elif resource == "light_level":
-            data.append(object.getLightlevel())
+            light_level: Sensor.Sensor = object
+            data.append(light_level.getLightlevel())
         else:
             return {"errors": [{"description": "Not Found"}], "data": []}
 
@@ -612,63 +664,74 @@ class ClipV2ResourceId(Resource):
 
     def put(self, resource, resourceid):
         logging.debug(request.headers)
+        logging.debug(request.get_json(force=True))
         authorisation = authorizeV2(request.headers)
         if "user" not in authorisation:
+            logging.info("Not authorized")
             return "", 403
-        putDict = request.get_json(force=True)
+        putDict: dict[str, Any] = request.get_json(force=True)
         logging.info(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
+            light_object: Light.Light = object
             putDict["controlled_service"] = "manual"
-            object.setV2State(putDict)
+            light_object.setV2State(putDict)
         elif resource == "entertainment_configuration":
             if "action" in putDict:
+                e_object: EntertainmentConfiguration.EntertainmentConfiguration = object
                 if putDict["action"] == "start":
                     logging.info("start hue entertainment")
                     Thread(target=entertainmentService, args=[
-                           object, authorisation["user"]]).start()
-                    for light in object.lights:
-                        light().update_attr({"state": {"mode": "streaming"}})
-                    object.update_attr({"stream": {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"}})
+                           e_object, authorisation["user"]]).start()
+                    for e_light in e_object.lights:
+                        e_light: Light.Light = e_light
+                        e_light.update_attr({"state": {"mode": "streaming"}})
+                    e_object.update_attr({"stream": {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"}})
                     sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
-                    for light in object.lights:
-                        light().update_attr({"state": {"mode": "homeautomation"}})
+                    for e_light in e_object.lights:
+                        e_light: Light.Light = e_light
+                        e_light.update_attr({"state": {"mode": "homeautomation"}})
                     Popen(["killall", "openssl"])
-                    object.update_attr({"stream": {"active": False}})
+                    e_object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
+            scene_object: Scene.Scene = object
             if "recall" in putDict:
-                object.activate(putDict)
+                scene_object.activate(putDict)
             if "speed" in putDict:
-                object.speed = putDict["speed"]
+                scene_object.speed = putDict["speed"]
             if "palette" in putDict:
-                object.palette = putDict["palette"]
+                scene_object.palette = putDict["palette"]
             if "metadata" in putDict:
-                object.name = putDict["metadata"]["name"]
+                scene_object.name = putDict["metadata"]["name"]
         elif resource == "smart_scene":
+            smart_scene_object: SmartScene.SmartScene = object
             if "recall" in putDict and "action" in putDict["recall"]:
-                object.activate(putDict)
+                smart_scene_object.activate(putDict)
             if "transition_duration" in putDict:
-                object.speed = putDict["transition_duration"]
+                smart_scene_object.speed = putDict["transition_duration"]
             if "week_timeslots" in putDict:
                 if "timeslots" in putDict["week_timeslots"][0]:
-                    object.timeslots = putDict["week_timeslots"][0]["timeslots"]
+                    smart_scene_object.timeslots = putDict["week_timeslots"][0]["timeslots"]
                 if "recurrence" in putDict["week_timeslots"][0]:
-                    object.recurrence = putDict["week_timeslots"][0]["recurrence"]
+                    smart_scene_object.recurrence = putDict["week_timeslots"][0]["recurrence"]
             if "metadata" in putDict:
-                object.name = putDict["metadata"]["name"]
+                smart_scene_object.name = putDict["metadata"]["name"]
         elif resource == "grouped_light":
+            group_object: Group.Group = object
             putDict["controlled_service"] = "manual"
-            object.setV2Action(putDict)
+            group_object.setV2Action(putDict)
         elif resource == "geolocation":
-            bridgeConfig["sensors"]["1"].protocol_cfg = {
-                "lat": putDict["latitude"], "long": putDict["longitude"]}
-            bridgeConfig["sensors"]["1"].config["configured"] = True
-            daylightSensor(bridgeConfig["config"]["timezone"], bridgeConfig["sensors"]["1"])
+            geolocation_object: Sensor.Sensor = bridgeConfig["sensors"]["1"]
+            geolocation_object.protocol_cfg = {"lat": putDict["latitude"], "long": putDict["longitude"]}
+            geolocation_object.config["configured"] = True
+            daylightSensor(bridgeConfig["config"]["timezone"], geolocation_object)
         elif resource == "behavior_instance":
-            object.update_attr(putDict)
+            behavior_instance_object: BehaviorInstance.BehaviorInstance = object
+            behavior_instance_object.update_attr(putDict)
         elif resource in ["room", "zone"]:
+            room_zone_object: Group.Group = object
             v1Api = {}
             if "metadata" in putDict:
                 if "name" in putDict["metadata"]:
@@ -677,18 +740,18 @@ class ClipV2ResourceId(Resource):
                     v1Api["icon_class"] = putDict["metadata"]["archetype"].replace("_", " ").capitalize()
             if "children" in putDict:
                 for children in putDict["children"]:
-                    obj = getObject(
-                        children["rtype"], children["rid"])
-                    object.add_light(obj)
-            object.update_attr(v1Api)
+                    obj = getObject(children["rtype"], children["rid"])
+                    room_zone_object.add_light(obj)
+            room_zone_object.update_attr(v1Api)
         elif resource == 'geofence_client':
+            geofence_client_object: GeofenceClient.GeofenceClient = object
             attrs = {}
             if "name" in putDict:
                 attrs['name'] = putDict['name']
             if 'is_at_home' in putDict:
                 attrs['is_at_home'] = putDict['is_at_home']
-            if hasattr(object, 'update_attr') and callable(getattr(object, 'update_attr')):
-                object.update_attr(attrs)
+            if hasattr(geofence_client_object, 'update_attr') and callable(getattr(geofence_client_object, 'update_attr')):
+                geofence_client_object.update_attr(attrs)
         elif resource == "zigbee_device_discovery":
             if putDict["action"]["action_type"] == "search":
                 Thread(target=scanForLights).start()
@@ -715,8 +778,9 @@ class ClipV2ResourceId(Resource):
                         StreamEvent(streamMessage)
                     configManager.bridgeConfig.save_config(backup=False, resource="config")
         elif resource == "motion":
+            motion_object: Sensor.Sensor = object
             if "enabled" in putDict:
-                object.update_attr({"config": {"on": putDict["enabled"]}})
+                motion_object.update_attr({"config": {"on": putDict["enabled"]}})
         else:
             return {
                 "errors": [{

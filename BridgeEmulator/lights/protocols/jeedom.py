@@ -1,10 +1,7 @@
-import configManager
 import requests
-from typing import Dict, Any
+from typing import Any
 
-newLights = configManager.runtimeConfig.newLights
-
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of a light.
 
@@ -21,7 +18,7 @@ def set_light(light: Any, data: Dict[str, Any]) -> None:
             url = f"{base_url}{light.protocol_cfg['light_slider']}&slider={brightness}"
         requests.get(url, timeout=3)
 
-def get_light_state(light: Any) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of a light.
 

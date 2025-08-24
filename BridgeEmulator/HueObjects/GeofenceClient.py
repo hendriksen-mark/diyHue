@@ -2,12 +2,12 @@ import uuid
 import logManager
 from datetime import datetime, timezone
 from HueObjects import genV2Uuid, StreamEvent
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 logging = logManager.logger.get_logger(__name__)
 
 class GeofenceClient:
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self.name: str = data.get('name', f'Geofence {data.get("id_v1")}')
         self.id_v2: str = data["id_v2"] if "id_v2" in data else genV2Uuid()
         self.is_at_home: bool = data.get('is_at_home', False)
@@ -19,7 +19,7 @@ class GeofenceClient:
         self._send_stream_event({"id": self.id_v2, "type": "geofence_client"}, "delete")
         logging.info(f"{self.name} geofence client was destroyed.")
 
-    def update_attr(self, newdata: Dict[str, Any]) -> None:
+    def update_attr(self, newdata: dict[str, Any]) -> None:
         for key, value in newdata.items():
             if hasattr(self, key):
                 updateAttribute = getattr(self, key)
@@ -31,7 +31,7 @@ class GeofenceClient:
 
         self._send_stream_event(self.getV2GeofenceClient(), "update")
 
-    def _send_stream_event(self, data: Dict[str, Any], event_type: str) -> None:
+    def _send_stream_event(self, data: dict[str, Any], event_type: str) -> None:
         streamMessage = {
             "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "data": [data],
@@ -40,7 +40,7 @@ class GeofenceClient:
         }
         StreamEvent(streamMessage)
 
-    def getV2GeofenceClient(self) -> Dict[str, str]:
+    def getV2GeofenceClient(self) -> dict[str, str]:
         return {
             "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'geofence_client')),
             "name": self.name,

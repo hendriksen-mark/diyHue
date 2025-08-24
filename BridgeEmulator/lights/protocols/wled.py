@@ -7,12 +7,12 @@ import requests
 from functions.colors import convert_rgb_xy, convert_xy
 from time import sleep
 from zeroconf import IPVersion, ServiceBrowser, ServiceStateChange, Zeroconf
-from typing import List, Dict, Any
+from typing import List, Any
 
 logging = logManager.logger.get_logger(__name__)
 
 discovered_lights: List[List[str]] = []
-Connections: Dict[str, 'WledDevice'] = {}
+Connections: dict[str, 'WledDevice'] = {}
 
 
 def on_mdns_discover(zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange) -> None:
@@ -34,7 +34,7 @@ def on_mdns_discover(zeroconf: Zeroconf, service_type: str, name: str, state_cha
             discovered_lights.append([addresses[0], name])
 
 
-def discover(detectedLights: List[Dict[str, Any]], device_ips: List[str]) -> None:
+def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> None:
     """
     Discover WLED devices using mDNS and fallback to device IPs if necessary.
     
@@ -89,7 +89,7 @@ def discover(detectedLights: List[Dict[str, Any]], device_ips: List[str]) -> Non
             logging.error("<WLED> Error discovering device: %s", e)
 
 
-def set_light(light: Dict[str, Any], data: Dict[str, Any]) -> None:
+def set_light(light: dict[str, Any], data: dict[str, Any]) -> None:
     """
     Set the state of a WLED light.
     
@@ -111,7 +111,7 @@ def set_light(light: Dict[str, Any], data: Dict[str, Any]) -> None:
         send_light_data(wled_device, light, data)
 
 
-def send_light_data(wled_device: 'WledDevice', light: Dict[str, Any], data: Dict[str, Any]) -> None:
+def send_light_data(wled_device: 'WledDevice', light: dict[str, Any], data: dict[str, Any]) -> None:
     """
     Send light data to the WLED device.
     
@@ -147,7 +147,7 @@ def send_light_data(wled_device: 'WledDevice', light: Dict[str, Any], data: Dict
     wled_device.send_json(state)
 
 
-def get_light_state(light: Dict[str, Any]) -> Dict[str, Any]:
+def get_light_state(light: dict[str, Any]) -> dict[str, Any]:
     """
     Get the current state of a WLED light.
     
@@ -261,7 +261,7 @@ class WledDevice:
         self.segmentCount = len(self.segments)
         self.udpPort = self.state['info']['udpport']
 
-    def get_light_state(self) -> Dict[str, Any]:
+    def get_light_state(self) -> dict[str, Any]:
         """
         Get the current state of the WLED device.
         
@@ -271,7 +271,7 @@ class WledDevice:
         with urllib.request.urlopen(f"{self.url}/json") as resp:
             return json.loads(resp.read())
 
-    def get_seg_state(self, seg: int) -> Dict[str, Any]:
+    def get_seg_state(self, seg: int) -> dict[str, Any]:
         """
         Get the state of a specific segment.
         
@@ -328,7 +328,7 @@ class WledDevice:
         state = {"seg": [{"id": seg, "bri": bri}]}
         self.send_json(state)
 
-    def send_json(self, data: Dict[str, Any]) -> None:
+    def send_json(self, data: dict[str, Any]) -> None:
         """
         Send JSON data to the WLED device.
         

@@ -11,10 +11,10 @@ from lights.light_types import lightTypes
 from subprocess import check_output
 from pprint import pprint
 import os
-import sys
 import logManager
 import subprocess
-from typing import Dict, Any, Union
+from typing import Any, Union
+from HueObjects import Light
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -52,7 +52,7 @@ def get_key() -> str:
     return list(bridgeConfig["apiUsers"])[0]
 
 @core.route('/lights')
-def get_lights() -> Dict[str, Any]:
+def get_lights() -> dict[str, Any]:
     """
     Get the lights configuration.
 
@@ -60,12 +60,12 @@ def get_lights() -> Dict[str, Any]:
         None
 
     Returns:
-        Dict[str, Any]: The lights configuration.
+        dict[str, Any]: The lights configuration.
     """
     return {light: obj.save() for light, obj in bridgeConfig["lights"].items()}
 
 @core.route('/sensors')
-def get_sensors() -> Dict[str, Any]:
+def get_sensors() -> dict[str, Any]:
     """
     Get the sensors configuration.
 
@@ -73,12 +73,12 @@ def get_sensors() -> Dict[str, Any]:
         None
 
     Returns:
-        Dict[str, Any]: The sensors configuration.
+        dict[str, Any]: The sensors configuration.
     """
     return {sensor: obj.save() for sensor, obj in bridgeConfig["sensors"].items()}
 
 @core.route('/light-types', methods=['GET', 'POST'])
-def get_light_types() -> Union[Dict[str, Any], str]:
+def get_light_types() -> Union[dict[str, Any], str]:
     """
     Get or update the light types.
 
@@ -86,14 +86,14 @@ def get_light_types() -> Union[Dict[str, Any], str]:
         None
 
     Returns:
-        Union[Dict[str, Any], str]: The light types or a success message.
+        Union[dict[str, Any], str]: The light types or a success message.
     """
     if request.method == 'GET':
         return {"result": list(lightTypes.keys())}
     elif request.method == 'POST':
         data = request.get_json(force=True)
         lightId, modelId = list(data.items())[0]
-        light = bridgeConfig["lights"][lightId]
+        light: Light.Light = bridgeConfig["lights"][lightId]
         light.modelid = modelId
         light.state = lightTypes[modelId]["state"]
         light.config = lightTypes[modelId]["config"]
@@ -102,7 +102,7 @@ def get_light_types() -> Union[Dict[str, Any], str]:
         return "success"
 
 @core.route('/tradfri', methods=['POST'])
-def pairTradfri() -> Dict[str, Any]:
+def pairTradfri() -> dict[str, Any]:
     """
     Pair with a Tradfri gateway.
 
@@ -110,7 +110,7 @@ def pairTradfri() -> Dict[str, Any]:
         None
 
     Returns:
-        Dict[str, Any]: The result of the pairing process.
+        dict[str, Any]: The result of the pairing process.
     """
     try:
         data = request.get_json(force=True)
@@ -250,7 +250,7 @@ def restart() -> str:
     return "restart python with args"
 
 @core.route('/info')
-def info() -> Dict[str, str]:
+def info() -> dict[str, str]:
     """
     Get system information.
 
@@ -258,7 +258,7 @@ def info() -> Dict[str, str]:
         None
 
     Returns:
-        Dict[str, str]: The system information.
+        dict[str, str]: The system information.
     """
     uname = os.uname()
     return {

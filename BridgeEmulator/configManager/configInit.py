@@ -1,6 +1,6 @@
 import logManager
 import subprocess
-from typing import Dict, Any
+from typing import Any
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -20,16 +20,16 @@ def _get_default_gateway() -> str:
     default_route = next((line for line in result.stdout.splitlines() if "default" in line), None)
     return default_route.split()[2] if default_route else None
 
-def write_args(args: Dict[str, str], yaml_config: Dict[str, Any]) -> Dict[str, Any]:
+def write_args(args: dict[str, str], yaml_config: dict[str, Any]) -> dict[str, Any]:
     """
     Write arguments to the YAML configuration.
     
     Args:
-        args (Dict[str, str]): Arguments containing HOST_IP, FULLMAC, and MAC.
-        yaml_config (Dict[str, Any]): The YAML configuration to update.
+        args (dict[str, str]): Arguments containing HOST_IP, FULLMAC, and MAC.
+        yaml_config (dict[str, Any]): The YAML configuration to update.
     
     Returns:
-        Dict[str, Any]: The updated YAML configuration.
+        dict[str, Any]: The updated YAML configuration.
     """
     gateway_ip = _get_default_gateway()
     host_ip = args["HOST_IP"]

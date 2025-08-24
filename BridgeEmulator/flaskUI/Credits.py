@@ -1,8 +1,8 @@
 from flask_restful import Resource
-from typing import Union, List, Dict, Any, Tuple
+from typing import Union, List, Any, Tuple
 
 class Credits(Resource):
-    def get(self, resource: str) -> Union[List[Dict[str, Any]], Tuple[str, int]]:
+    def get(self, resource: str) -> Union[List[dict[str, Any]], Tuple[str, int]]:
         """
         Handle GET requests for various resources.
 
@@ -10,7 +10,7 @@ class Credits(Resource):
             resource (str): The name of the resource being requested.
 
         Returns:
-            Union[List[Dict[str, Any]], Tuple[str, int]]: The response data for the requested resource,
+            Union[List[dict[str, Any]], Tuple[str, int]]: The response data for the requested resource,
             or a 404 status code if the resource is not found.
         """
         json_responses = {

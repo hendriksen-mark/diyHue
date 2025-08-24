@@ -2,21 +2,21 @@ import logManager
 import yeelight
 from functions.colors import convert_rgb_xy, convert_xy
 from time import sleep
-from typing import List, Dict, Any
+from typing import List, Any
 
 logging = logManager.logger.get_logger(__name__)
 Connections = {}
 
 
-def discover(detectedLights: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def discover(detectedLights: List[dict[str, Any]]) -> List[dict[str, Any]]:
     """
     Discover Yeelight bulbs and append them to the detectedLights list.
 
     Args:
-        detectedLights (List[Dict[str, Any]]): List to append discovered lights to.
+        detectedLights (List[dict[str, Any]]): List to append discovered lights to.
 
     Returns:
-        List[Dict[str, Any]]: Updated list of detected lights.
+        List[dict[str, Any]]: Updated list of detected lights.
     """
     logging.debug("Yeelight: <discover> invoked!")
     discover = yeelight.discover_bulbs()
@@ -39,17 +39,17 @@ def discover(detectedLights: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return detectedLights
 
 
-def connect(light: Dict[str, Any]) -> yeelight.Bulb:
+def connect(light) -> yeelight.Bulb:
     """
     Connect to a Yeelight bulb.
 
     Args:
-        light (Dict[str, Any]): Light configuration dictionary.
+        light (dict[str, Any]): Light configuration dictionary.
 
     Returns:
         yeelight.Bulb: Connected Yeelight bulb object.
     """
-    ip = light["protocol_cfg"]["ip"]
+    ip = light.protocol_cfg["ip"]
     if ip in Connections:
         c = Connections[ip]
     else:
@@ -57,13 +57,13 @@ def connect(light: Dict[str, Any]) -> yeelight.Bulb:
         Connections[ip] = c
     return c
 
-def set_light(light: Dict[str, Any], data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of a Yeelight bulb.
 
     Args:
-        light (Dict[str, Any]): Light configuration dictionary.
-        data (Dict[str, Any]): State data to set on the light.
+        light (dict[str, Any]): Light configuration dictionary.
+        data (dict[str, Any]): State data to set on the light.
     """
     c = connect(light)
     payload = {}
@@ -131,15 +131,15 @@ def calculate_color_temp(value: int) -> int:
     """
     return int(-(347/4800) * int(value) +(2989900/4800))
 
-def get_light_state(light: Dict[str, Any]) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of a Yeelight bulb.
 
     Args:
-        light (Dict[str, Any]): Light configuration dictionary.
+        light (dict[str, Any]): Light configuration dictionary.
 
     Returns:
-        Dict[str, Any]: Current state of the light.
+        dict[str, Any]: Current state of the light.
     """
     c = connect(light)
     state = {}

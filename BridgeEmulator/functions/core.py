@@ -1,13 +1,13 @@
 import zoneinfo
-from typing import Dict, Any
+from typing import Any
 import subprocess
 
-def nextFreeId(bridgeConfig: Dict[str, Any], element: str) -> str:
+def nextFreeId(bridgeConfig: dict[str, Any], element: str) -> str:
     """
     Find the next free ID for a given element in the bridge configuration.
 
     Args:
-        bridgeConfig (Dict[str, Any]): The bridge configuration.
+        bridgeConfig (dict[str, Any]): The bridge configuration.
         element (str): The element to find the next free ID for.
 
     Returns:
@@ -30,19 +30,19 @@ def get_pi_temp() -> float:
     
     # Fall back to vcgencmd (works on Raspberry Pi host)
     try:
-        output: subprocess.CompletedProcess = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, check=True)
+        output = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, check=True)
         temp_str: str = output.stdout.decode()
         return float(temp_str.split('=')[1].split('\'')[0])
     except (IndexError, ValueError, subprocess.CalledProcessError, FileNotFoundError):
         raise RuntimeError('Could not get temperature')
 
 
-def staticConfig() -> Dict[str, Any]:
+def staticConfig() -> dict[str, Any]:
     """
     Return the static configuration for the bridge.
 
     Returns:
-        Dict[str, Any]: The static configuration.
+        dict[str, Any]: The static configuration.
     """
     return {
         "backup": {
@@ -99,12 +99,12 @@ def staticConfig() -> Dict[str, Any]:
         "zigbeechannel": 25
     }
 
-def capabilities() -> Dict[str, Any]:
+def capabilities() -> dict[str, Any]:
     """
     Return the capabilities of the bridge.
 
     Returns:
-        Dict[str, Any]: The capabilities of the bridge.
+        dict[str, Any]: The capabilities of the bridge.
     """
     return {
         "lights": {

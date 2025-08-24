@@ -7,32 +7,33 @@ from threading import Thread
 from functions.scripts import triggerScript
 import logManager
 import configManager
-from typing import Dict, Any
+from typing import Any
+from HueObjects import Sensor, BehaviorInstance
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
-def runBackgroundSleep(instance: Dict[str, Any], seconds: float) -> None:
+def runBackgroundSleep(instance: dict[str, Any], seconds: float) -> None:
     """
     Run a background sleep for a specified number of seconds and then trigger a script.
 
     Args:
-        instance (Dict[str, Any]): The instance configuration.
+        instance (dict[str, Any]): The instance configuration.
         seconds (float): The number of seconds to sleep.
     """
     sleep(seconds)
     triggerScript(instance)
 
-def calculate_offsets(sensor: Any, sun_times: Dict[str, datetime]) -> Dict[str, float]:
+def calculate_offsets(sensor: Sensor.Sensor, sun_times: dict[str, datetime]) -> dict[str, float]:
     """
     Calculate the offsets for sunset and sunrise based on the sensor configuration.
 
     Args:
-        sensor (Any): The sensor object containing configuration.
-        sun_times (Dict[str, datetime]): The dictionary containing sunrise and sunset times.
+        sensor (Sensor.Sensor): The sensor object containing configuration.
+        sun_times (dict[str, datetime]): The dictionary containing sunrise and sunset times.
 
     Returns:
-        Dict[str, float]: A dictionary with calculated offsets for sunset and sunrise.
+        dict[str, float]: A dictionary with calculated offsets for sunset and sunrise.
     """
     delta_sunset = sun_times['sunset'].replace(tzinfo=None) - datetime.now(timezone.utc).replace(tzinfo=None)
     delta_sunrise = sun_times['sunrise'].replace(tzinfo=None) - datetime.now(timezone.utc).replace(tzinfo=None)
@@ -41,12 +42,12 @@ def calculate_offsets(sensor: Any, sun_times: Dict[str, datetime]) -> Dict[str, 
         "sunrise": delta_sunrise.total_seconds() + sensor.config["sunriseoffset"] * 60
     }
 
-def update_sensor_state(sensor: Any, is_daylight: bool, current_time: datetime) -> None:
+def update_sensor_state(sensor: Sensor.Sensor, is_daylight: bool, current_time: datetime) -> None:
     """
     Update the sensor state and process rules based on the current time.
 
     Args:
-        sensor (Any): The sensor object to update.
+        sensor (Sensor.Sensor): The sensor object to update.
         is_daylight (bool): The daylight state to set.
         current_time (datetime): The current time.
     """
@@ -54,13 +55,13 @@ def update_sensor_state(sensor: Any, is_daylight: bool, current_time: datetime) 
     sensor.dxState["daylight"] = current_time
     rulesProcessor(sensor, current_time)
 
-def handle_sleep(offset: float, sensor: Any, is_daylight: bool, current_time: datetime) -> None:
+def handle_sleep(offset: float, sensor: Sensor.Sensor, is_daylight: bool, current_time: datetime) -> None:
     """
     Handle the sleep for the specified offset and update the sensor state.
 
     Args:
         offset (float): The number of seconds to sleep.
-        sensor (Any): The sensor object to update.
+        sensor (Sensor.Sensor): The sensor object to update.
         is_daylight (bool): The daylight state to set after sleep.
         current_time (datetime): The current time.
     """
@@ -68,13 +69,13 @@ def handle_sleep(offset: float, sensor: Any, is_daylight: bool, current_time: da
     logging.debug(f"sleep finish at {current_time.strftime('%Y-%m-%dT%H:%M:%S')}")
     update_sensor_state(sensor, is_daylight, current_time)
 
-def daylightSensor(tz: str, sensor: Any) -> None:
+def daylightSensor(tz: str, sensor: Sensor.Sensor) -> None:
     """
     Main function to handle the daylight sensor logic.
 
     Args:
         tz (str): The timezone string.
-        sensor (Any): The sensor object containing configuration and state.
+        sensor (Sensor.Sensor): The sensor object containing configuration and state.
     """
     if not sensor.config["configured"]:
         logging.debug("Daylight Sensor: location is not configured")
@@ -100,6 +101,7 @@ def daylightSensor(tz: str, sensor: Any) -> None:
 
     # v2 api routines
     for key, instance in bridgeConfig["behavior_instance"].items():
+        instance: BehaviorInstance.BehaviorInstance = instance
         if instance.enabled and "when_extended" in instance.configuration:
             offset = 0
             time_point = instance.configuration["when_extended"]["start_at"]["time_point"]

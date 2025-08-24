@@ -1,4 +1,6 @@
-sensorTypes = {}
+from typing import Any
+
+sensorTypes: dict[str, dict[str, Any]] = {}
 
 # Daylight sensor
 sensorTypes["PHDL00"] = {

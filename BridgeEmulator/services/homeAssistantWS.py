@@ -1,7 +1,7 @@
 import json
 import threading
 import time
-from typing import Any, Dict, List
+from typing import Any, List
 
 from ws4py.client.threadedclient import WebSocketClient
 
@@ -19,7 +19,7 @@ homeassistant_ws_client = None
 include_by_default = False
 use_https = False
 
-latest_states: Dict[str, Dict[str, Any]] = {}
+latest_states: dict[str, dict[str, Any]] = {}
 
 
 class HomeAssistantClient(WebSocketClient):
@@ -27,7 +27,7 @@ class HomeAssistantClient(WebSocketClient):
     WebSocket client for Home Assistant integration.
     """
     message_id = 1
-    id_to_type: Dict[int, str] = {}
+    id_to_type: dict[int, str] = {}
 
     def opened(self) -> None:
         """Called when the WebSocket connection is opened."""
@@ -75,12 +75,12 @@ class HomeAssistantClient(WebSocketClient):
         except Exception as e:
             logging.exception("Error processing received message: {}".format(e))
 
-    def do_auth_required(self, m: Dict[str, Any]) -> None:
+    def do_auth_required(self, m: dict[str, Any]) -> None:
         """
         Handle authentication required message.
 
         Args:
-            m (Dict[str, Any]): The message.
+            m (dict[str, Any]): The message.
         """
         logging.info("Home Assistant Web Socket Authorisation required")
         payload = {
@@ -89,12 +89,12 @@ class HomeAssistantClient(WebSocketClient):
         }
         self._send(payload)
 
-    def do_auth_invalid(self, message: Dict[str, Any]) -> None:
+    def do_auth_invalid(self, message: dict[str, Any]) -> None:
         """
         Handle invalid authentication message.
 
         Args:
-            message (Dict[str, Any]): The message.
+            message (dict[str, Any]): The message.
         """
         logging.error(
             "Home Assistant Web Socket Authorisation invalid: {}".format(message))
@@ -121,15 +121,15 @@ class HomeAssistantClient(WebSocketClient):
         }
         self._send_with_id(payload, "subscribe")
 
-    def change_light(self, light: Any, data: Dict[str, Any]) -> None:
+    def change_light(self, light: Any, data: dict[str, Any]) -> None:
         """
         Change the state of a light in Home Assistant.
 
         Args:
             light (Any): The light object.
-            data (Dict[str, Any]): The data to change the light state.
+            data (dict[str, Any]): The data to change the light state.
         """
-        service_data: Dict[str, Any] = {}
+        service_data: dict[str, Any] = {}
         service_data['entity_id'] = light.protocol_cfg['entity_id']
         if light.protocol_cfg['entity_id'].startswith("light."):
             payload = {
@@ -170,12 +170,12 @@ class HomeAssistantClient(WebSocketClient):
 
         self._send_with_id(payload, "service")
 
-    def do_result(self, message: Dict[str, Any]) -> None:
+    def do_result(self, message: dict[str, Any]) -> None:
         """
         Handle result messages from Home Assistant.
 
         Args:
-            message (Dict[str, Any]): The message.
+            message (dict[str, Any]): The message.
         """
         if 'result' in message and message['result']:
             message_type = self.id_to_type.pop(message['id'], None)
@@ -188,12 +188,12 @@ class HomeAssistantClient(WebSocketClient):
                         latest_states[entity_id] = ha_state
                 discovery_result.set()
 
-    def do_event(self, message: Dict[str, Any]) -> None:
+    def do_event(self, message: dict[str, Any]) -> None:
         """
         Handle event messages from Home Assistant.
 
         Args:
-            message (Dict[str, Any]): The message.
+            message (dict[str, Any]): The message.
         """
         try:
             event_type = message['event']['event_type']
@@ -202,12 +202,12 @@ class HomeAssistantClient(WebSocketClient):
         except KeyError:
             logging.exception("No event_type in event")
 
-    def do_state_changed(self, message: Dict[str, Any]) -> None:
+    def do_state_changed(self, message: dict[str, Any]) -> None:
         """
         Handle state changed events from Home Assistant.
 
         Args:
-            message (Dict[str, Any]): The message.
+            message (dict[str, Any]): The message.
         """
         try:
             entity_id = message['event']['data']['entity_id']
@@ -219,12 +219,12 @@ class HomeAssistantClient(WebSocketClient):
         except KeyError as e:
             logging.exception("No state in event: {}".format(message))
 
-    def _should_include(self, ha_state: Dict[str, Any]) -> bool:
+    def _should_include(self, ha_state: dict[str, Any]) -> bool:
         """
         Determine if a Home Assistant state should be included.
 
         Args:
-            ha_state (Dict[str, Any]): The Home Assistant state.
+            ha_state (dict[str, Any]): The Home Assistant state.
 
         Returns:
             bool: True if the state should be included, False otherwise.
@@ -242,12 +242,12 @@ class HomeAssistantClient(WebSocketClient):
                 should_include = diy_hue_flag == "include"
         return should_include
 
-    def _send_with_id(self, payload: Dict[str, Any], type_of_call: str) -> None:
+    def _send_with_id(self, payload: dict[str, Any], type_of_call: str) -> None:
         """
         Send a message with an ID to Home Assistant.
 
         Args:
-            payload (Dict[str, Any]): The message payload.
+            payload (dict[str, Any]): The message payload.
             type_of_call (str): The type of call.
         """
         payload['id'] = self.message_id
@@ -255,12 +255,12 @@ class HomeAssistantClient(WebSocketClient):
         self.message_id += 1
         self._send(payload)
 
-    def _send(self, payload: Dict[str, Any]) -> None:
+    def _send(self, payload: dict[str, Any]) -> None:
         """
         Send a message to Home Assistant.
 
         Args:
-            payload (Dict[str, Any]): The message payload.
+            payload (dict[str, Any]): The message payload.
         """
         json_payload = json.dumps(payload)
         self.send(json_payload)
@@ -303,12 +303,12 @@ def create_websocket_client() -> None:
         homeassistant_ws_client = None
 
 
-def create_ws_client(bridgeConfig: Dict[str, Any]) -> None:
+def create_ws_client(bridgeConfig: dict[str, Any]) -> None:
     """
     Create a WebSocket client for Home Assistant using the bridge configuration.
 
     Args:
-        bridgeConfig (Dict[str, Any]): The bridge configuration.
+        bridgeConfig (dict[str, Any]): The bridge configuration.
     """
     global homeassistant_token
     global homeassistant_url
@@ -326,12 +326,12 @@ def create_ws_client(bridgeConfig: Dict[str, Any]) -> None:
     connect_if_required()
 
 
-def discover(detectedLights: List[Dict[str, Any]]) -> None:
+def discover(detectedLights: List[dict[str, Any]]) -> None:
     """
     Discover lights from Home Assistant and add them to the detectedLights list.
 
     Args:
-        detectedLights (List[Dict[str, Any]]): The list to add discovered lights to.
+        detectedLights (List[dict[str, Any]]): The list to add discovered lights to.
     """
     logging.info("HomeAssistant WebSocket discovery called")
     connect_if_required()

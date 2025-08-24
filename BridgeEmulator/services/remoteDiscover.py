@@ -1,10 +1,12 @@
 import requests
 from time import sleep
-from typing import Dict, Any
+from typing import Any
 import signal
 
+import configManager
 import logManager
 
+bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
 ### This service is needed for Hue Essentials to automatically discover the diyhue instance.
@@ -13,16 +15,17 @@ SLEEP_INTERVAL = 60
 DISCOVERY_URL = 'https://discovery.diyhue.org'
 running = True
 
-def runRemoteDiscover(config: Dict[str, Any], timeout: int = 5) -> None:
+def runRemoteDiscover(timeout: int = 5) -> None:
     """
     Run the remote discovery service to allow Hue Essentials to discover the diyhue instance.
     
     Args:
-        config (Dict[str, Any]): Configuration dictionary.
+        config (dict[str, Any]): Configuration dictionary.
         timeout (int): Timeout for the requests in seconds.
     """
     logging.info("Starting discovery service")
-    
+    config = bridgeConfig["config"]
+
     if not validate_config(config):
         return
 
@@ -48,12 +51,12 @@ def runRemoteDiscover(config: Dict[str, Any], timeout: int = 5) -> None:
             handle_unexpected_exception(e, retry_delay)
             retry_delay = min(retry_delay * 2, 3600)  # Exponential backoff, max 1 hour
 
-def validate_config(config: Dict[str, Any]) -> bool:
+def validate_config(config: dict[str, Any]) -> bool:
     """
     Validate that the required keys are present in the config dictionary.
     
     Args:
-        config (Dict[str, Any]): Configuration dictionary.
+        config (dict[str, Any]): Configuration dictionary.
     
     Returns:
         bool: True if all required keys are present, False otherwise.

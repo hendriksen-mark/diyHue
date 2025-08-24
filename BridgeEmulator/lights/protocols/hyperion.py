@@ -1,17 +1,17 @@
 import json
 import re
 import socket
-from typing import List, Dict, Any, Union
+from typing import List, Any, Union
 import logManager
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb
 
 logging = logManager.logger.get_logger(__name__)
 
-Connections: Dict[str, 'HyperionConnection'] = {}
+Connections: dict[str, 'HyperionConnection'] = {}
 
 PRIORITY = 75
 
-def discover(detectedLights: List[Dict[str, Any]]) -> None:
+def discover(detectedLights: List[dict[str, Any]]) -> None:
     """
     Discover Hyperion lights on the network.
 
@@ -55,7 +55,7 @@ def discover(detectedLights: List[Dict[str, Any]]) -> None:
     finally:
         sock.close()
 
-def set_light(light: Dict[str, Any], data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of a Hyperion light.
 
@@ -85,7 +85,7 @@ def set_light(light: Dict[str, Any], data: Dict[str, Any]) -> None:
 
     c.command(request_data)
 
-def get_light_state(light: Dict[str, Any]) -> Dict[str, Union[bool, Dict[str, Any]]]:
+def get_light_state(light) -> dict[str, Union[bool, dict[str, Any]]]:
     """
     Get the current state of a Hyperion light.
 
@@ -189,7 +189,7 @@ class HyperionConnection:
             self._connected = False
             raise e
 
-    def command(self, data: Dict[str, Any]) -> None:
+    def command(self, data: dict[str, Any]) -> None:
         """
         Send a command to the Hyperion server.
 

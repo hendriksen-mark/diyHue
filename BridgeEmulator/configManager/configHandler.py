@@ -8,7 +8,7 @@ import uuid
 import weakref
 from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 import glob
 import re
 import sys
@@ -49,8 +49,8 @@ def _write_yaml(path: str, contents: Any) -> None:
         yaml.dump(contents, fp, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False)
 
 class Config:
-    yaml_config: Optional[Dict[str, Any]] = None
-    argsDict: Dict[str, Any] = {}
+    yaml_config: Optional[dict[str, Any]] = None
+    argsDict: dict[str, Any] = {}
     configDir: str = ""
     runningDir: str = ""
 
@@ -67,12 +67,12 @@ class Config:
         if self.configDir and not os.path.exists(self.configDir):
             os.makedirs(self.configDir)
 
-    def _set_default_config_values(self, config: Dict[str, Any]) -> None:
+    def _set_default_config_values(self, config: dict[str, Any]) -> None:
         """
         Set default configuration values.
 
         Args:
-            config (Dict[str, Any]): The configuration dictionary.
+            config (dict[str, Any]): The configuration dictionary.
         """
         defaults = {
             "Remote API enabled": False,
@@ -120,20 +120,25 @@ class Config:
                 "state": "noupdates",
                 "install": False
             },
-            "branch": "main"
+            "branch": "main",
+            "entertainment_fps": 60
         }
         for key, value in defaults.items():
             if key not in config:
                 config[key] = value
         return config
 
-    def _upgrade_config(self, config: Dict[str, Any]) -> None:
+    def _upgrade_config(self, config: dict[str, Any]) -> None:
         """
         Upgrade the configuration if necessary.
 
         Args:
-            config (Dict[str, Any]): The configuration dictionary.
+            config (dict[str, Any]): The configuration dictionary.
         """
+        if "configDir" in config:
+            del config["configDir"]
+        if "runningDir" in config:
+            del config["runningDir"]
         if int(config["swversion"]) < 1958077010:
             config["swversion"] = "1967054020"
         if float(config["apiversion"][:3]) < 1.56:
@@ -142,16 +147,16 @@ class Config:
             config["linkbutton"] = {"lastlinkbuttonpushed": 1599398980}
         return config
 
-    def _load_yaml_file(self, filename: str, default: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def _load_yaml_file(self, filename: str, default: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
         """
         Load a YAML file and return its contents.
 
         Args:
             filename (str): The name of the YAML file.
-            default (Optional[Dict[str, Any]]): The default value if the file does not exist.
+            default (Optional[dict[str, Any]]): The default value if the file does not exist.
 
         Returns:
-            Optional[Dict[str, Any]]: The contents of the YAML file or the default value.
+            Optional[dict[str, Any]]: The contents of the YAML file or the default value.
         """
         path = os.path.join(self.configDir, filename)
         if os.path.exists(path):
@@ -174,19 +179,21 @@ class Config:
         #create group 0
         self.yaml_config["groups"]["0"] = Group.Group({"name":"Group 0","id_v1": "0","type":"LightGroup","state":{"all_on":False,"any_on":True},"recycle":False,"action":{"on":False,"bri":165,"hue":8418,"sat":140,"effect":"none","xy":[0.6635,0.2825],"ct":366,"alert":"select","colormode":"hs"}})
         for key, light in self.yaml_config["lights"].items():
-            self.yaml_config["groups"]["0"].add_light(light)
+            group_0: Group.Group = self.yaml_config["groups"]["0"]
+            group_0.add_light(light)
         # create groups
         groups = self._load_yaml_file("groups.yaml", {})
         for group, data in groups.items():
             data["id_v1"] = group
             if data["type"] == "Entertainment":
                 self.yaml_config["groups"][group] = EntertainmentConfiguration.EntertainmentConfiguration(data)
+                e_group: EntertainmentConfiguration.EntertainmentConfiguration = self.yaml_config["groups"][group]
                 for light in data["lights"]:
-                    self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+                    e_group.add_light(self.yaml_config["lights"][light])
                 if "locations" in data:
                     for light, location in data["locations"].items():
                         lightObj = self.yaml_config["lights"][light]
-                        self.yaml_config["groups"][group].locations[lightObj] = location
+                        e_group.locations[lightObj] = location
             else:
                 if "owner" in data and isinstance(data["owner"], dict):
                     data["owner"] = self.yaml_config["apiUsers"][list(self.yaml_config["apiUsers"])[0]]
@@ -195,8 +202,9 @@ class Config:
                 else:
                     data["owner"] = self.yaml_config["apiUsers"][data["owner"]]
                 self.yaml_config["groups"][group] = Group.Group(data)
+                group_obj: Group.Group = self.yaml_config["groups"][group]
                 for light in data["lights"]:
-                    self.yaml_config["groups"][group].add_light(self.yaml_config["lights"][light])
+                    group_obj.add_light(self.yaml_config["lights"][light])
 
     def _load_scenes(self) -> None:
         """
@@ -206,16 +214,17 @@ class Config:
         for scene, data in scenes.items():
             data["id_v1"] = scene
             if data["type"] == "GroupScene":
-                group = weakref.ref(self.yaml_config["groups"][data["group"]])
-                data["lights"] = group().lights
+                group: Group.Group = weakref.ref(self.yaml_config["groups"][data["group"]])
+                data["lights"] = group.lights
                 data["group"] = group
             else:
                 data["lights"] = [weakref.ref(self.yaml_config["lights"][light]) for light in data["lights"]]
             data["owner"] = self.yaml_config["apiUsers"][data["owner"]]
             self.yaml_config["scenes"][scene] = Scene.Scene(data)
+            scene_obj: Scene.Scene = self.yaml_config["scenes"][scene]
             for light, lightstate in data["lightstates"].items():
                 lightObj = self.yaml_config["lights"][light]
-                self.yaml_config["scenes"][scene].lightstates[lightObj] = lightstate
+                scene_obj.lightstates[lightObj] = lightstate
 
     def _load_smart_scenes(self) -> None:
         """
@@ -300,8 +309,6 @@ class Config:
             config = self._set_default_config_values(config)
             config = self._upgrade_config(config)
             self.yaml_config["config"] = config
-            self.yaml_config["config"]["configDir"] = self.configDir
-            self.yaml_config["config"]["runningDir"] = self.runningDir
 
             self._load_lights()
             self._load_groups()
@@ -460,12 +467,12 @@ class Config:
         subprocess.run(f'rm -r {self.configDir}/config_debug.yaml {debug_logs_dir}', shell=True, capture_output=True, text=True)
         return f"{self.configDir}/config_debug.tar"
 
-    def write_args(self, args: Dict[str, Any]) -> None:
+    def write_args(self, args: dict[str, Any]) -> None:
         """
         Write arguments to the configuration.
 
         Args:
-            args (Dict[str, Any]): The arguments to write.
+            args (dict[str, Any]): The arguments to write.
         """
         self.yaml_config = configInit.write_args(args, self.yaml_config)
 

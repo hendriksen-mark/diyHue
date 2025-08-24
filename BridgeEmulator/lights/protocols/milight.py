@@ -2,11 +2,11 @@ import json
 import logManager
 import requests
 from functions.colors import convert_xy
-from typing import Dict, Any
+from typing import Any
 
 logging = logManager.logger.get_logger(__name__)
 
-def set_light(light: Any, data: Dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of the light.
 
@@ -38,7 +38,7 @@ def set_light(light: Any, data: Dict[str, Any]) -> None:
     logging.debug(json.dumps(payload))
     requests.put(url, json=payload, timeout=3)
 
-def get_light_state(light: Any) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of the light.
 

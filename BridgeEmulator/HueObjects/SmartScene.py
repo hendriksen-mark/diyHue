@@ -1,27 +1,27 @@
 import uuid
 import logManager
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
-from HueObjects import genV2Uuid, StreamEvent
+from typing import Any, Optional
+from HueObjects import genV2Uuid, StreamEvent, Group
 
 logging = logManager.logger.get_logger(__name__)
 
 class SmartScene:
     DEFAULT_SPEED = 60000  # ms
 
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         self.name: str = data["name"]
         self.id_v1: str = data["id_v1"]
         self.id_v2: str = data.get("id_v2", genV2Uuid())
-        self.appdata: Dict[str, Any] = data.get("appdata", {})
+        self.appdata: dict[str, Any] = data.get("appdata", {})
         self.type: str = data.get("type", "smart_scene")
         self.image: Optional[str] = data.get("image")
         self.action: str = data.get("action", "deactivate")
         self.lastupdated: str = data.get("lastupdated", self._current_time())
-        self.timeslots: Dict[str, Any] = data.get("timeslots", {})
-        self.recurrence: Dict[str, Any] = data.get("recurrence", {})
+        self.timeslots: dict[str, Any] = data.get("timeslots", {})
+        self.recurrence: dict[str, Any] = data.get("recurrence", {})
         self.speed: int = data.get("transition_duration", self.DEFAULT_SPEED)
-        self.group: Optional[Dict[str, Any]] = data.get("group")
+        self.group: Optional[dict[str, Any]] = data.get("group")
         self.state: str = data.get("state", "inactive")
         self.active_timeslot: int = data.get("active_timeslot", 0)
 
@@ -31,7 +31,7 @@ class SmartScene:
         self._send_stream_event({"id": self.id_v2, "type": "smart_scene"}, "delete")
         logging.info(f"{self.name} smart_scene was destroyed.")
 
-    def _send_stream_event(self, data: Dict[str, Any], event_type: str) -> None:
+    def _send_stream_event(self, data: dict[str, Any], event_type: str) -> None:
         streamMessage = {
             "creationtime": self._current_time(),
             "data": [data],
@@ -41,7 +41,7 @@ class SmartScene:
         }
         StreamEvent(streamMessage)
 
-    def activate(self, data: Dict[str, Any]) -> None:
+    def activate(self, data: dict[str, Any]) -> None:
         recall_action = data.get("recall", {}).get("action")
         if recall_action == "activate":
             self._activate_scene()
@@ -59,12 +59,12 @@ class SmartScene:
 
     def _deactivate_scene(self) -> None:
         from functions.scripts import findGroup
-        group = findGroup(self.group["rid"])
+        group: Group.Group = findGroup(self.group["rid"])
         group.setV1Action(state={"on": False})
         logging.debug(f"deactivate smart_scene: {self.name}")
         self.state = "inactive"
 
-    def getV2Api(self) -> Dict[str, Any]:
+    def getV2Api(self) -> dict[str, Any]:
         result = {
             "metadata": {
                 "name": self.name
@@ -85,7 +85,7 @@ class SmartScene:
             result["metadata"]["image"] = {"rid": self.image, "rtype": "public_image"}
         return result
 
-    def update_attr(self, newdata: Dict[str, Any]) -> None:
+    def update_attr(self, newdata: dict[str, Any]) -> None:
         self.lastupdated = self._current_time()
         for key, value in newdata.items():
             updateAttribute = getattr(self, key)
@@ -95,7 +95,7 @@ class SmartScene:
             else:
                 setattr(self, key, value)
 
-    def save(self) -> Dict[str, Any]:
+    def save(self) -> dict[str, Any]:
         result = {
             "id_v2": self.id_v2,
             "name": self.name,

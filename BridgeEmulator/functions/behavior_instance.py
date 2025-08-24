@@ -5,20 +5,21 @@ import random
 from datetime import datetime
 from threading import Thread
 from time import sleep
-from typing import List, Dict, Any, Optional
+from typing import List, Any, Optional
+from HueObjects import Group, Light, Scene
 
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-def findTriggerTime(times: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def findTriggerTime(times: List[dict[str, Any]]) -> List[dict[str, Any]]:
     """
     Find the trigger time based on the current time.
 
     Args:
-        times (List[Dict[str, Any]]): List of time intervals with actions.
+        times (List[dict[str, Any]]): List of time intervals with actions.
 
     Returns:
-        List[Dict[str, Any]]: Actions corresponding to the current time interval.
+        List[dict[str, Any]]: Actions corresponding to the current time interval.
     """
     now = datetime.now()
     for i in range(len(times) - 1):
@@ -37,6 +38,7 @@ def callScene(scene: str) -> None:
     """
     logging.info(f"Calling scene {scene}")
     for obj in bridgeConfig["scenes"].values():
+        obj: Scene.Scene = obj
         if obj.id_v2 == scene:
             obj.activate({"seconds": 1, "minutes": 0})
 
@@ -52,6 +54,7 @@ def findGroup(rid: str, rtype: str) -> Optional[Any]:
         Optional[Any]: The group object if found, otherwise None.
     """
     for obj in bridgeConfig["groups"].values():
+        obj: Group.Group = obj
         if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + rtype)) == rid:
             return obj
     logging.info("Group not found!!!!")
@@ -69,17 +72,18 @@ def findLight(rid: str, rtype: str) -> Optional[Any]:
         Optional[Any]: The light object if found, otherwise None.
     """
     for obj in bridgeConfig["lights"].values():
+        obj: Light.Light = obj
         if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2)) == rid:
             return obj
     logging.info("Light not found!!!!")
     return None
 
-def threadDelayAction(actionsToExecute: Dict[str, Any], device: Any, monitoredKey: str, monitoredValue: Any, groupsAndLights: List[Any]) -> None:
+def threadDelayAction(actionsToExecute: dict[str, Any], device: Any, monitoredKey: str, monitoredValue: Any, groupsAndLights: List[Any]) -> None:
     """
     Execute actions after a delay if the monitored value remains unchanged.
 
     Args:
-        actionsToExecute (Dict[str, Any]): Actions to execute.
+        actionsToExecute (dict[str, Any]): Actions to execute.
         device (Any): The device to monitor.
         monitoredKey (str): The key to monitor in the device state.
         monitoredValue (Any): The value to monitor in the device state.
@@ -100,12 +104,12 @@ def threadDelayAction(actionsToExecute: Dict[str, Any], device: Any, monitoredKe
         sleep(1)
     logging.info("Motion detected, canceling the counter...")
 
-def executeActions(actionsToExecute: Dict[str, Any], groupsAndLights: List[Any]) -> None:
+def executeActions(actionsToExecute: dict[str, Any], groupsAndLights: List[Any]) -> None:
     """
     Execute the specified actions on the groups and lights.
 
     Args:
-        actionsToExecute (Dict[str, Any]): Actions to execute.
+        actionsToExecute (dict[str, Any]): Actions to execute.
         groupsAndLights (List[Any]): List of groups and lights to control.
     """
     recall = "recall_single" if "recall_single" in actionsToExecute else "recall"
@@ -336,7 +340,7 @@ def handleContactSensor(instance: Any, device: Any, lightsAndGroups: List[Any]) 
         logging.info(f"Trigger routine {instance.name}")
         executeActions(actions[contact], lightsAndGroups)
 
-def getContactSensorActions(instance: Any) -> Dict[str, Any]:
+def getContactSensorActions(instance: Any) -> dict[str, Any]:
     """
     Get the actions for a contact sensor based on the configuration.
 
@@ -344,7 +348,7 @@ def getContactSensorActions(instance: Any) -> Dict[str, Any]:
         instance (Any): The behavior instance.
 
     Returns:
-        Dict[str, Any]: The actions for the contact sensor.
+        dict[str, Any]: The actions for the contact sensor.
     """
     if "timeslots" in instance.configuration["when"]:
         allSlots = [
@@ -415,4 +419,3 @@ def handleTimeBasedExtendedAction(instance: Any, button: str, buttonAction: str,
     ]
     actions = findTriggerTime(allSlots)
     executeActions(actions, lightsAndGroups)
-# ...existing code...

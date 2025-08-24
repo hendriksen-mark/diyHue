@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from threading import Thread
 from time import sleep
 from functions.behavior_instance import checkBehaviorInstances
-from typing import Dict, Any, Union
+from typing import Union
+from HueObjects import Sensor
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -25,20 +26,21 @@ def noMotion(sensor: str) -> None:
     Returns:
         None
     """
-    bridgeConfig["sensors"][sensor].protocol_cfg["threaded"] = True
+    sensor: Sensor.Sensor = bridgeConfig["sensors"][sensor]
+    sensor.protocol_cfg["threaded"] = True
     logging.info("Monitor the sensor for no motion")
 
-    while (datetime.now() - bridgeConfig["sensors"][sensor].dxState["presence"]).total_seconds() < 60:
+    while (datetime.now() - sensor.dxState["presence"]).total_seconds() < 60:
         sleep(1)
-    bridgeConfig["sensors"][sensor].state["presence"] = False
+    sensor.state["presence"] = False
     current_time = datetime.now()
-    bridgeConfig["sensors"][sensor].dxState["presence"] = current_time
-    rulesProcessor(bridgeConfig["sensors"][sensor], current_time)
-    bridgeConfig["sensors"][sensor].protocol_cfg["threaded"] = False
+    sensor.dxState["presence"] = current_time
+    rulesProcessor(sensor, current_time)
+    sensor.protocol_cfg["threaded"] = False
 
 
 class Switch(Resource):
-    def get(self) -> Dict[str, Union[str, Dict[str, str]]]:
+    def get(self) -> dict[str, Union[str, dict[str, str]]]:
         """
         Handle GET requests to register or update devices based on the provided arguments.
 
@@ -46,7 +48,7 @@ class Switch(Resource):
             None
 
         Returns:
-            Dict[str, Union[str, Dict[str, str]]]: The result of the operation.
+            dict[str, Union[str, dict[str, str]]]: The result of the operation.
         """
         args = request.args
         if "mac" not in args:
@@ -77,16 +79,16 @@ class Switch(Resource):
             obj.protocol_cfg.get("mac") != mac for obj in bridgeConfig["sensors"].values()
         )
 
-    def register_device(self, args: Dict[str, str], mac: str) -> Dict[str, str]:
+    def register_device(self, args: dict[str, str], mac: str) -> dict[str, str]:
         """
         Register a new device based on the provided arguments and MAC address.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             mac (str): The MAC address of the device.
 
         Returns:
-            Dict[str, str]: The result of the registration operation.
+            dict[str, str]: The result of the registration operation.
         """
         device_type = args["devicetype"]
         if device_type in ["ZLLSwitch", "ZGPSwitch"]:
@@ -101,30 +103,31 @@ class Switch(Resource):
         sensor.protocol_cfg["mac"] = mac
         return {"success": "device registered"}
 
-    def update_device(self, args: Dict[str, str], mac: str, current_time: datetime) -> Dict[str, str]:
+    def update_device(self, args: dict[str, str], mac: str, current_time: datetime) -> dict[str, str]:
         """
         Update an existing device based on the provided arguments and MAC address.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             mac (str): The MAC address of the device.
             current_time (datetime): The current time.
 
         Returns:
-            Dict[str, str]: The result of the update operation.
+            dict[str, str]: The result of the update operation.
         """
         for device, obj in bridgeConfig["sensors"].items():
+            obj: Sensor.Sensor = obj
             if obj.protocol_cfg.get("mac") == mac:
                 self.apply_device_updates(args, obj, current_time)
                 return {"success": "command applied"}
         return {"fail": "device not found"}
 
-    def apply_device_updates(self, args: Dict[str, str], obj: Any, current_time: datetime) -> None:
+    def apply_device_updates(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
         """
         Apply updates to the device based on its type and the provided arguments.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             obj (Any): The device object.
             current_time (datetime): The current time.
 
@@ -150,12 +153,12 @@ class Switch(Resource):
         else:
             return {"fail": "unknown device"}
 
-    def update_light_level(self, args: Dict[str, str], obj: Any, current_time: datetime) -> None:
+    def update_light_level(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
         """
         Update the light level sensor based on the provided arguments.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             obj (Any): The device object.
             current_time (datetime): The current time.
 
@@ -176,12 +179,12 @@ class Switch(Resource):
                 obj.dxState["daylight"] = current_time
                 obj.state["daylight"] = daylight
 
-    def update_presence(self, args: Dict[str, str], obj: Any, current_time: datetime) -> None:
+    def update_presence(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
         """
         Update the presence sensor based on the provided arguments.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             obj (Any): The device object.
             current_time (datetime): The current time.
 
@@ -198,12 +201,12 @@ class Switch(Resource):
                 if not obj.protocol_cfg["threaded"]:
                     Thread(target=noMotion, args=[obj]).start()
 
-    def update_temperature(self, args: Dict[str, str], obj: Any, current_time: datetime) -> None:
+    def update_temperature(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
         """
         Update the temperature sensor based on the provided arguments.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             obj (Any): The device object.
             current_time (datetime): The current time.
 
@@ -214,12 +217,12 @@ class Switch(Resource):
             obj.state["temperature"] = int(args["temperature"])
             obj.dxState["temperature"] = current_time
 
-    def update_switch(self, args: Dict[str, str], obj: Any, current_time: datetime) -> None:
+    def update_switch(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
         """
         Update the switch sensor based on the provided arguments.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             obj (Any): The device object.
             current_time (datetime): The current time.
 
@@ -232,12 +235,12 @@ class Switch(Resource):
         if "battery" in args:
             obj.update_attr({"config": {"battery": int(args["battery"])}})
 
-    def update_rotary(self, args: Dict[str, str], obj: Any, current_time: datetime) -> None:
+    def update_rotary(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
         """
         Update the rotary sensor based on the provided arguments.
 
         Args:
-            args (Dict[str, str]): The arguments provided in the request.
+            args (dict[str, str]): The arguments provided in the request.
             obj (Any): The device object.
             current_time (datetime): The current time.
 

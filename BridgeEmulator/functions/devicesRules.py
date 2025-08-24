@@ -3,19 +3,19 @@ import configManager
 from HueObjects import Rule, ResourceLink
 from datetime import datetime, timezone
 import logManager
-from typing import List, Dict, Any
+from typing import List, Any
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
-def create_rule(actions: List[Dict[str, Any]], conditions: List[Dict[str, Any]], name: str) -> Dict[str, Any]:
+def create_rule(actions: List[dict[str, Any]], conditions: List[dict[str, Any]], name: str) -> dict[str, Any]:
     return {
         "actions": actions,
         "conditions": conditions,
         "name": name
     }
 
-def add_rules_to_bridge(rules: List[Dict[str, Any]], sensor_id: str) -> None:
+def add_rules_to_bridge(rules: List[dict[str, Any]], sensor_id: str) -> None:
     resourcelinkId = nextFreeId(bridgeConfig, "resourcelinks")
     owner = bridgeConfig["apiUsers"][list(bridgeConfig["apiUsers"])[0]]
     bridgeConfig["resourcelinks"][resourcelinkId] = ResourceLink.ResourceLink({
@@ -31,7 +31,8 @@ def add_rules_to_bridge(rules: List[Dict[str, Any]], sensor_id: str) -> None:
         data = rule
         data.update({"id_v1": ruleId, "owner": owner, "recycle": True})
         bridgeConfig["rules"][ruleId] = Rule.Rule(data)
-        bridgeConfig["resourcelinks"][resourcelinkId].add_link(bridgeConfig["rules"][ruleId])
+        resourcelink_object: ResourceLink.ResourceLink = bridgeConfig["resourcelinks"][resourcelinkId]
+        resourcelink_object.add_link(bridgeConfig["rules"][ruleId])
 
 def addTradfriDimmer(sensor_id: str, group_id: str) -> None:
     rules = [

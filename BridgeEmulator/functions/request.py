@@ -37,6 +37,7 @@ def sendRequest(url: str, method: str, data: Optional[Union[dict, str]] = None, 
     
     for attempt in range(retries):
         try:
+            response: Optional[requests.Response] = None
             if method in {"POST", "PUT"}:
                 data = data.encode("utf8") if isinstance(data, str) else data
                 response = request_func(url, json=data if isinstance(data, dict) else data, timeout=timeout, headers=headers)

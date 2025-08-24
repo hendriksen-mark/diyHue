@@ -1,6 +1,6 @@
 import socket
 import time
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from zeroconf import IPVersion, ServiceInfo, Zeroconf
 
@@ -49,7 +49,7 @@ class MDNSListener:
         self.zeroconf = Zeroconf(ip_version=ip_version)
 
         try:
-            props: Dict[str, str] = {
+            props: dict[str, str] = {
                 'modelid': self.modelid,
                 'bridgeid': self.bridgeid
             }
@@ -92,7 +92,7 @@ class MDNSListener:
                 logging.info('<MDNS> service unregistered and Zeroconf closed')
         self.running = False
 
-    def update_properties(self, new_props: Dict[str, str]) -> None:
+    def update_properties(self, new_props: dict[str, str]) -> None:
         """
         Update the properties of the registered mDNS service.
         

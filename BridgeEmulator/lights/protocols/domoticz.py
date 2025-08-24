@@ -5,11 +5,11 @@ from functions.colors import convert_xy, rgbBrightness
 
 logging = logManager.logger.get_logger(__name__)
 
-def build_url(light, command, params):
+def build_url(light, command: str, params: str) -> str:
     base_url = f"http://{light.protocol_cfg['ip']}/json.htm?type=command&idx={light.protocol_cfg['domoticzID']}"
     return f"{base_url}&param={command}&{params}"
 
-def send_request(url):
+def send_request(url: str):
     try:
         logging.debug(url)
         response = requests.put(url, timeout=3)
@@ -17,7 +17,7 @@ def send_request(url):
     except requests.RequestException as e:
         logging.error(f"Error sending request to {url}: {e}")
 
-def set_light(light, data, rgb=None):
+def set_light(light, data: dict, rgb: tuple = None) -> None:
     if "on" in data:
         switch_cmd = "On" if data["on"] else "Off"
         url = build_url(light, "switchlight", f"switchcmd={switch_cmd}")
@@ -46,7 +46,7 @@ def set_light(light, data, rgb=None):
         url = build_url(light, "setcolbrightnessvalue", params)
         send_request(url)
 
-def get_light_state(light):
+def get_light_state(light) -> dict:
     try:
         response = requests.get(f"http://{light.protocol_cfg['ip']}/json.htm?type=devices&rid={light.protocol_cfg['domoticzID']}", timeout=3)
         response.raise_for_status()

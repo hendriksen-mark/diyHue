@@ -2,7 +2,7 @@ import json
 import logManager
 import requests
 from functions.colors import convert_rgb_xy, convert_xy, rgbBrightness
-from typing import List, Dict, Any, Union
+from typing import List, Any, Union
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -42,12 +42,12 @@ def is_json(content: str) -> bool:
         return False
     return True
 
-def discover(detectedLights: List[Dict[str, Any]], device_ips: List[str]) -> None:
+def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> None:
     """
     Discover Tasmota devices on the network.
 
     Args:
-        detectedLights (List[Dict[str, Any]]): The list to append detected lights to.
+        detectedLights (List[dict[str, Any]]): The list to append detected lights to.
         device_ips (List[str]): The list of device IPs to probe.
     """
     logging.debug("tasmota: <discover> invoked!")
@@ -70,13 +70,13 @@ def discover(detectedLights: List[Dict[str, Any]], device_ips: List[str]) -> Non
         except requests.RequestException as e:
             logging.info(f"ip {ip} is unknown device: {e}")
 
-def set_light(light: Dict[str, Any], data: Dict[str, Any], rgb: Union[List[int], None] = None) -> None:
+def set_light(light, data: dict[str, Any], rgb: Union[List[int], None] = None) -> None:
     """
     Set the state of a Tasmota light.
 
     Args:
-        light (Dict[str, Any]): The light configuration.
-        data (Dict[str, Any]): The state data to set.
+        light : The light configuration.
+        data (dict[str, Any]): The state data to set.
         rgb (Union[List[int], None]): The RGB values if available.
     """
     for key, value in data.items():
@@ -129,15 +129,15 @@ def rgb_to_hex(rgb: List[int]) -> str:
     return '%02x%02x%02x' % tuple(rgb)
     # return '#%02x%02x%02x' % rgb
 
-def get_light_state(light: Dict[str, Any]) -> Dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of a Tasmota light.
 
     Args:
-        light (Dict[str, Any]): The light configuration.
+        light : The light configuration.
 
     Returns:
-        Dict[str, Any]: The current state of the light.
+        dict[str, Any]: The current state of the light.
     """
     data = sendRequest(f"http://{light.protocol_cfg['ip']}/cm?cmnd=Status%2011")
     if not data:
