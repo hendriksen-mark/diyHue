@@ -155,8 +155,10 @@ def entertainmentService(group: EntertainmentConfiguration.EntertainmentConfigur
     p.stdout.read(1)  # read one byte so the init function will correctly detect the frameBites
 
     try:
+        min_frame_time = 1.0 / float(bridgeConfig["config"].get("entertainment_fps", 30))
         while group.stream["active"]:
-            new_frame_time = time.time()
+            frame_start_time = time.time()
+            new_frame_time = frame_start_time
             if not init:
                 readByte: bytes = p.stdout.read(1)
                 logging.debug(readByte)
@@ -342,6 +344,11 @@ def entertainmentService(group: EntertainmentConfiguration.EntertainmentConfigur
                         h.disconnect()
                     except UnboundLocalError:
                         pass
+
+            # FPS limiting
+            elapsed = time.time() - frame_start_time
+            if elapsed < min_frame_time:
+                time.sleep(min_frame_time - elapsed)
 
     except socket.timeout as e:
         logging.error(f"Entertainment Service timed out: {e}")
