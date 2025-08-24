@@ -147,7 +147,7 @@ class Light:
         self.setV1State(v1State, advertise=False)
         self.genStreamEvent(state)
 
-    def genStreamEvent(self, v2State: Dict[str, Any]) -> None:
+    def genStreamEvent(self, v2State: dict[str, Any]) -> None:
         streamMessage = {
             "data": [{"id": self.id_v2, "id_v1": f"/lights/{self.id_v1}", "type": "light"}],
         }
