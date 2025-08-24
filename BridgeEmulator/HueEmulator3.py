@@ -6,7 +6,7 @@ from threading import Thread
 import ssl
 import configManager
 from functions.daylightSensor import daylightSensor
-from services import LogWS
+#from services import LogWS
 from flaskUI import create_app
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
@@ -54,7 +54,7 @@ def main():
     Thread(target=mdns.mdnsListener, args=[HOST_IP, HOST_HTTPS_PORT, "BSB002", bridgeConfig["config"]["bridgeid"], mac]).start()
     Thread(target=scheduler.runScheduler).start()
     Thread(target=eventStreamer.messageBroker).start()
-    Thread(target=LogWS.start_ws_server).start()
+    #Thread(target=LogWS.start_ws_server).start()
     if not DISABLE_HTTPS:
         Thread(target=runHttps, args=[BIND_IP, HOST_HTTPS_PORT, CONFIG_PATH]).start()
     runHttp(BIND_IP, HOST_HTTP_PORT)
