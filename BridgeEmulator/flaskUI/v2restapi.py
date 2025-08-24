@@ -1,6 +1,3 @@
-from math import e
-from re import S
-from turtle import st
 import configManager
 import logManager
 from HueObjects import Group, EntertainmentConfiguration, Scene, BehaviorInstance, GeofenceClient, SmartScene, ApiUser, Light, Sensor, StreamEvent
