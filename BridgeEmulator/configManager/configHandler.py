@@ -8,7 +8,7 @@ import uuid
 import weakref
 from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
-from typing import Any, Optional
+from typing import Any, Optional, cast
 import glob
 import re
 import sys
@@ -214,9 +214,11 @@ class Config:
         for scene, data in scenes.items():
             data["id_v1"] = scene
             if data["type"] == "GroupScene":
-                group: Group.Group = weakref.ref(self.yaml_config["groups"][data["group"]])
-                data["lights"] = group.lights
-                data["group"] = group
+                group_ref = weakref.ref(self.yaml_config["groups"][data["group"]])
+                group = cast(Group.Group, group_ref())
+                if group is not None:
+                    data["lights"] = group.lights
+                    data["group"] = group_ref
             else:
                 data["lights"] = [weakref.ref(self.yaml_config["lights"][light]) for light in data["lights"]]
             data["owner"] = self.yaml_config["apiUsers"][data["owner"]]
