@@ -65,6 +65,39 @@ class Switch(Resource):
         else:
             return self.update_device(args, mac, current_time)
 
+    def post(self) -> dict[str, Union[str, dict[str, str]]]:
+        """
+        Handle POST requests with JSON body to register or update devices.
+        More efficient than GET with query parameters.
+
+        Args:
+            None
+
+        Returns:
+            dict[str, Union[str, dict[str, str]]]: The result of the operation.
+        """
+        try:
+            data = request.get_json()
+            if not data:
+                return {"fail": "invalid json"}
+            
+            if "mac" not in data:
+                return {"fail": "missing mac address"}
+
+            current_time = datetime.now()
+            mac = data["mac"]
+
+            if "devicetype" in data:  # device registration if is new
+                if self.is_device_new(mac):
+                    return self.register_device(data, mac)
+                else:
+                    return {"fail": "device already registered"}
+            else:
+                return self.update_device(data, mac, current_time)
+        except Exception as e:
+            logging.error(f"Error processing POST request: {e}")
+            return {"fail": "error processing request"}
+
     def is_device_new(self, mac: str) -> bool:
         """
         Check if the device with the given MAC address is new.
