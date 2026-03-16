@@ -100,7 +100,7 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, armv7, arm64, armv6]
-        registry: [registry.hub.docker.com, ghcr.io/diyhue]
+        registry: [registry.hub.docker.com, ghcr.io]
     steps:
       - name: Set Docker Repository
         if: github.repository == 'diyhue/diyHue' || matrix.registry != 'registry.hub.docker.com'
@@ -112,7 +112,11 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="${GITHUB_REPOSITORY,,}"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            fi
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
@@ -151,7 +155,7 @@ jobs:
     strategy:
       matrix:
         arch: [amd64, armv7, arm64, armv6]
-        registry: [registry.hub.docker.com, ghcr.io/diyhue]
+        registry: [registry.hub.docker.com, ghcr.io]
     steps:
       - name: Set Docker Repository
         if: github.repository == 'diyhue/diyHue' || matrix.registry != 'registry.hub.docker.com'
@@ -163,7 +167,11 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="${GITHUB_REPOSITORY,,}"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            fi
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
@@ -228,7 +236,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        registry: [registry.hub.docker.com, ghcr.io/diyhue]
+        registry: [registry.hub.docker.com, ghcr.io]
     steps:
       - name: Set Docker Repository
         if: github.repository == 'diyhue/diyHue' || matrix.registry != 'registry.hub.docker.com'
@@ -240,7 +248,11 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="${GITHUB_REPOSITORY,,}"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            fi
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
@@ -336,7 +348,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        registry: [registry.hub.docker.com, ghcr.io/diyhue]
+        registry: [registry.hub.docker.com, ghcr.io]
         include:
           - version: v7l
             arch_friendly: armv7
@@ -353,7 +365,11 @@ jobs:
               export DOCKER_REPO="${{ matrix.registry }}/diyhue/core"
             fi
           else
-            export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
+              export DOCKER_REPO="${GITHUB_REPOSITORY,,}"
+            else
+              export DOCKER_REPO="${{ matrix.registry }}/${GITHUB_REPOSITORY,,}"
+            fi
           fi
           echo "DOCKER_REPO=${DOCKER_REPO}" >> $GITHUB_ENV
           echo Repository set as: ${DOCKER_REPO}
