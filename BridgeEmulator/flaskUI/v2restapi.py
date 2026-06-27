@@ -298,7 +298,7 @@ class ClipV2(Resource):
                 group: Group.Group = group
                 data.append(group.getV2Zone())
         # entertainment_configuration
-            if group.type == "Entertainment":
+            elif group.type == "Entertainment":
                 e_group = cast(EntertainmentConfiguration.EntertainmentConfiguration, group)
                 data.append(e_group.getV2Api())
         # grouped_light
