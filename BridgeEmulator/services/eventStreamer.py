@@ -43,6 +43,7 @@ def streamV2Events() -> Response:
         client_id = int(time())
         connected_clients.append(client_id)
         logging.info(f"Client {client_id} connected. Total clients: {len(connected_clients)}")
+        last_send_time = time()
         try:
             yield f": hi\n\n"
             while True:
@@ -52,6 +53,9 @@ def streamV2Events() -> Response:
                             yield f"id: {int(time()) }:{index}\ndata: {json.dumps([messages], separators=(',', ':'))}\n\n"
                         HueObjects.eventstream = []
                     sleep(0.2)
+                    if time() - last_send_time > 15:
+                        last_send_time = time()
+                        yield f": hi\n\n"
                 except GeneratorExit:
                     logging.info("Client closed the connection.")
                     break
