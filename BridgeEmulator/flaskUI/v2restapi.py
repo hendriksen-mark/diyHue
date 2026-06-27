@@ -289,25 +289,26 @@ class ClipV2(Resource):
             data.append(light.getV2Api())
         # room
         for key, group in bridgeConfig["groups"].items():
+        # room
             if group.type == "Room":
                 group: Group.Group = group
                 data.append(group.getV2Room())
+        # zone
             elif group.type == "Zone":
                 group: Group.Group = group
                 data.append(group.getV2Zone())
+        # entertainment_configuration
+            if group.type == "Entertainment":
+                e_group = cast(EntertainmentConfiguration.EntertainmentConfiguration, group)
+                data.append(e_group.getV2Api())
+        # grouped_light
+            elif group.type not in ["Entertainment"]:
+                group: Group.Group = group
+                data.append(group.getV2GroupedLight())
         # behavior_instance
         for key, instance in bridgeConfig["behavior_instance"].items():
             instance: BehaviorInstance.BehaviorInstance = instance
             data.append(instance.getV2Api())
-        # entertainment_configuration
-        for key, e_group in bridgeConfig["groups"].items():
-            if e_group.type == "Entertainment":
-                e_group: EntertainmentConfiguration.EntertainmentConfiguration = e_group
-                data.append(e_group.getV2Api())
-        # group
-            else:
-                group: Group.Group = group
-                data.append(group.getV2GroupedLight())
         # bridge home
         data.append(v2BridgeHome())
         data.append(v2GeofenceClient())
