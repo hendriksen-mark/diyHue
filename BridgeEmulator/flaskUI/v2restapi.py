@@ -370,8 +370,9 @@ class ClipV2Resource(Resource):
                     response["data"].append(group.getV2Zone())
         elif resource == "grouped_light":
             for key, group in bridgeConfig["groups"].items():
-                group: Group.Group = group
-                response["data"].append(group.getV2GroupedLight())
+                if group.type not in ["Entertainment"]:
+                    group: Group.Group = group
+                    response["data"].append(group.getV2GroupedLight())
         elif resource == "zigbee_connectivity":
             for key, light in bridgeConfig["lights"].items():
                 light: Light.Light = light
