@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from functions.scripts import behaviorScripts
 from lights.discover import scanForLights
 from functions.daylightSensor import daylightSensor
-from typing import Any
+from typing import Any, cast
 
 logging = logManager.logger.get_logger(__name__)
 
