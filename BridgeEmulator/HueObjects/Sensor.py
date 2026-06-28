@@ -35,9 +35,9 @@ class Sensor:
         self.type: str = data["type"]
         self.state: dict[str, Any] = data["state"]
         self.dxState: dict[str, datetime] = {state: datetime.now() for state in data["state"].keys()}
-        self.swversion: str = data.get("swversion")
+        self.swversion: str = data.get("swversion", "")
         self.recycle: bool = data.get("recycle", False)
-        self.uniqueid: str = data.get("uniqueid")
+        self.uniqueid: str = data.get("uniqueid", "")
 
         if self.getDevice() is not None:
             streamMessage = {
@@ -51,14 +51,16 @@ class Sensor:
 
     def __del__(self) -> None:
         if self.modelid in ["SML001", "RWL022"]:
-            streamMessage = {
-                "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "data": [{"id": self.getDevice()["id"], "type": "device"}],
-                "id": str(uuid.uuid4()),
-                "type": "delete"
-            }
-            streamMessage["id_v1"] = "/sensors/" + self.id_v1
-            StreamEvent(streamMessage)
+            device = self.getDevice()
+            if device is not None:
+                streamMessage = {
+                    "creationtime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "data": [{"id": device["id"], "type": "device"}],
+                    "id": str(uuid.uuid4()),
+                    "type": "delete"
+                }
+                streamMessage["id_v1"] = "/sensors/" + self.id_v1
+                StreamEvent(streamMessage)
         logging.info(self.name + " sensor was destroyed.")
 
     def setV1State(self, state: dict[str, Any]) -> None:
@@ -276,7 +278,7 @@ class Sensor:
             "status": "connected"
         }
 
-    def getButtons(self) -> Optional[dict[str, Any]]:
+    def getButtons(self) -> Optional[list[dict[str, Any]]]:
         if self.modelid in ["RWL022", "RWL021", "RWL020", "RDM002"] and self.type != "ZLLRelativeRotary":
             return [
                 {

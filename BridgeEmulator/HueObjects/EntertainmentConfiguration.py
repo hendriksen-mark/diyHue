@@ -22,7 +22,7 @@ class EntertainmentConfiguration:
         self.locations: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
         self.stream: dict[str, Union[str, bool, None]] = {"proxymode": "auto", "proxynode": "/bridge", "active": False, "owner": None}
         self.state: dict[str, bool] = {"all_on": False, "any_on": False}
-        self.dxState: dict[str, Optional[bool]] = {"all_on": None, "any_on": None}
+        self.dxState: dict[str, Optional[datetime]] = {"all_on": None, "any_on": None}
 
         self._send_stream_event(self.getV2Api(), "add")
 
@@ -50,9 +50,9 @@ class EntertainmentConfiguration:
     def update_state(self) -> dict[str, bool]:
         all_on = bool(self.lights)
         any_on = False
-        for light in self.lights:
-            light: Optional[Light.Light] = light()
-            if light and light.state["on"]:
+        for light_ref in self.lights:
+            light_obj: Optional[Light.Light] = light_ref()
+            if light_obj and light_obj.state["on"]:
                 any_on = True
             else:
                 all_on = False
@@ -68,8 +68,18 @@ class EntertainmentConfiguration:
         }
 
     def getV1Api(self) -> dict[str, Any]:
-        lights = [light().id_v1 for light in self.lights if light()]
-        sensors = [sensor().id_v1 for sensor in self.sensors if sensor()]
+        lights: List[str] = []
+        for light_ref in self.lights:
+            light_obj = light_ref()
+            if light_obj is not None:
+                lights.append(light_obj.id_v1)
+
+        sensors: List[str] = []
+        for sensor_ref in self.sensors:
+            sensor_obj = sensor_ref()
+            if sensor_obj is not None:
+                sensors.append(sensor_obj.id_v1)
+
         locations = {light.id_v1: [loc[0]["x"], loc[0]["y"], loc[0]["z"]] for light, loc in list(self.locations.items()) if light.id_v1 in lights}
         class_type = "Free" if self.configuration_type == "3dspace" else "TV"
         return {
@@ -91,6 +101,9 @@ class EntertainmentConfiguration:
             {"x": 0.0, "y": 0.8, "z": 0.4}, {"x": 0.4, "y": 0.8, "z": 0.4}, {"x": 0.4, "y": 0.8, "z": 0.0},
             {"x": 0.4, "y": 0.8, "z": -0.4}
         ]
+        first_light = self.lights[0]() if self.lights else None
+        stream_proxy_rid = str(uuid.uuid5(uuid.NAMESPACE_URL, first_light.id_v2 + 'entertainment')) if first_light else None
+
         result = {
             "configuration_type": self.configuration_type,
             "locations": {"service_locations": []},
@@ -99,7 +112,7 @@ class EntertainmentConfiguration:
             "stream_proxy": {
                 "mode": "auto",
                 "node": {
-                    "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.lights[0]().id_v2 + 'entertainment')) if self.lights else None,
+                    "rid": stream_proxy_rid,
                     "rtype": "entertainment"
                 }
             },
@@ -113,9 +126,9 @@ class EntertainmentConfiguration:
         if self.stream["active"]:
             result["active_streamer"] = {"rid": self.stream["owner"], "rtype": "auth_v1"}
         channel_id = 0
-        for light in self.lights:
-            if light():
-                light: Light.Light = light()
+        for light_ref in self.lights:
+            light: Optional[Light.Light] = light_ref()
+            if light:
                 result["light_services"].append({"rtype": "light", "rid": light.id_v2})
                 entertainmentUuid = str(uuid.uuid5(uuid.NAMESPACE_URL, light.id_v2 + 'entertainment'))
                 result["locations"]["service_locations"].append({
@@ -178,13 +191,19 @@ class EntertainmentConfiguration:
         return {"resource": "groups", "id": self.id_v1}
 
     def save(self) -> dict[str, Any]:
+        light_ids: List[str] = []
+        for light_ref in self.lights:
+            light_obj = light_ref()
+            if light_obj is not None:
+                light_ids.append(light_obj.id_v1)
+
         result = {
             "id_v2": self.id_v2,
             "name": self.name,
             "configuration_type": self.configuration_type,
-            "lights": [light().id_v1 for light in self.lights if light()],
+            "lights": light_ids,
             "action": self.action,
             "type": self.type,
-            "locations": {light.id_v1: loc for light, loc in self.locations.items() if light.id_v1 in [light().id_v1 for light in self.lights if light()]}
+            "locations": {light.id_v1: loc for light, loc in self.locations.items() if light.id_v1 in light_ids}
         }
         return result

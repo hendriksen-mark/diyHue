@@ -1,7 +1,7 @@
 import json
 import re
 import socket
-from typing import List, Any, Union
+from typing import List, Any, Union, Optional
 import logManager
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb
 
@@ -34,7 +34,7 @@ def discover(detectedLights: List[dict[str, Any]]) -> None:
     try:
         while True:
             response = sock.recv(1024).decode('utf-8').split("\r\n")
-            properties = {"rgb": False, "ct": False}
+            properties: dict[str, Any] = {"rgb": False, "ct": False}
             for line in response:
                 if line.startswith("USN"):
                     properties["id"] = line[10:]
@@ -47,7 +47,7 @@ def discover(detectedLights: List[dict[str, Any]]) -> None:
                 elif line.startswith("LOCATION"):
                     properties["ip"] = line.split(":")[2][2:]
                 elif line.startswith("SERVER"):
-                    properties["version"] = re.match("Hyperion/\\S*", line)
+                    properties["version"] = re.match(r"Hyperion/\S*", line)
             if "name" in properties:
                 detectedLights.append({"protocol": "hyperion", "name": properties["name"], "modelid": "LCT015", "protocol_cfg": properties})
     except socket.timeout:
@@ -102,7 +102,7 @@ def get_light_state(light) -> dict[str, Union[bool, dict[str, Any]]]:
         c = HyperionConnection(ip, light.protocol_cfg["jss_port"])
         Connections[ip] = c
 
-    state = {"on": False}
+    state: dict[str, Any] = {"on": False}
 
     c.command({"command": "serverinfo"})
     try:
@@ -125,7 +125,7 @@ def get_light_state(light) -> dict[str, Union[bool, dict[str, Any]]]:
 
 class HyperionConnection:
     _connected: bool = False
-    _socket: socket.socket = None
+    _socket: Optional[socket.socket] = None
     _host_ip: str = ""
 
     def __init__(self, ip: str, port: str) -> None:
@@ -165,7 +165,10 @@ class HyperionConnection:
         try:
             if not self._connected:
                 self.connect()
-            self._socket.send(data, flags)
+            socket_obj = self._socket
+            if socket_obj is None:
+                raise ConnectionError("Hyperion socket is not connected")
+            socket_obj.send(data, flags)
         except Exception as e:
             self._connected = False
             raise e
@@ -184,7 +187,10 @@ class HyperionConnection:
         try:
             if not self._connected:
                 self.connect()
-            return self._socket.recv(bufsize, flags)
+            socket_obj = self._socket
+            if socket_obj is None:
+                raise ConnectionError("Hyperion socket is not connected")
+            return socket_obj.recv(bufsize, flags)
         except Exception as e:
             self._connected = False
             raise e

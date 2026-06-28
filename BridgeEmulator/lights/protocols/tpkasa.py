@@ -2,7 +2,7 @@ import asyncio
 import colorsys
 import json
 import socket
-from typing import Any
+from typing import Any, Optional
 
 from kasa import SmartLightStrip, Discover, TPLinkSmartHomeProtocol
 
@@ -82,8 +82,8 @@ def create_gradient(color: list, brightness: int) -> list:
 
     return multi_color
 
-def get_gradiant_state(multi_color: list) -> dict:
-    state = {"on_off": 1}
+def get_gradiant_state(multi_color: list[list[int]]) -> dict[str, Any]:
+    state: dict[str, Any] = {"on_off": 1}
     state["groups"] = multi_color
 
     return state
@@ -117,15 +117,15 @@ def discover(detectedLights: list) -> None:
     devices: dict = asyncio.run(Discover.discover(target="192.168.0.255"))
 
     for device in list(devices.keys()):
-        x: KL430LightStrip = devices[device]
-        asyncio.run(x.update())
+        kasa_device: KL430LightStrip = devices[device]
+        asyncio.run(kasa_device.update())
 
-        if x.model.startswith("KL430"):
+        if kasa_device.model.startswith("KL430"):
             ip = device
-            name = x.alias
-            for x in range(1, 4):
+            name = kasa_device.alias
+            for light_nr in range(1, 4):
                 lightName = name
-                protocol_cfg = {"ip": ip, "id": name, "light_nr": x, "model": "KL430", "old_state": None}
+                protocol_cfg = {"ip": ip, "id": name, "light_nr": light_nr, "model": "KL430", "old_state": None}
                 protocol_cfg["points_capable"] = 7
                 detectedLights.append({"protocol": "tpkasa", "name": lightName, "modelid": "LCX002",
                                        "protocol_cfg": protocol_cfg})
@@ -133,14 +133,14 @@ def discover(detectedLights: list) -> None:
 
 def translateRange(value: int, inMin: int, inMax: int, outMin: int, outMax: int) -> int:
     # colortemp 2051 used as indicator for color mode
-    value = ((value - inMin) / (inMax - inMin)) * (outMax - outMin)
-    out = value + outMin
+    scaled_value = ((value - inMin) / (inMax - inMin)) * (outMax - outMin)
+    out = int(round(scaled_value + outMin))
     if out == 2501:
         return 2500
     return out
 
 
-def build_request(command: str, state: dict, protocol: str = None) -> bytes:
+def build_request(command: str, state: dict, protocol: Optional[str] = None) -> bytes:
     """
     Args:
         state: parameters
@@ -276,8 +276,8 @@ def set_light(light, data: dict[str, Any]) -> None:
         elif key == "alert" and value != "none":
             payload["brightness"] = 100
 
-    data = build_request("set_light_state", payload)
-    send_request(light.protocol_cfg["ip"], data)
+    request = build_request("set_light_state", payload)
+    send_request(light.protocol_cfg["ip"], request)
 
 
 """async def get_state(strip):

@@ -2,7 +2,7 @@ import json
 import requests
 import logManager
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb, rgbBrightness
-from typing import List, Any
+from typing import List, Any, Optional
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -95,7 +95,7 @@ def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> Non
             logging.debug(f"ESPHome: probing ip {ip}")
             response = requests.get(f"http://{ip}/text_sensor/light_id", timeout=3)
             response.raise_for_status()
-            if response.content and is_json(response.content):
+            if response.text and is_json(response.text):
                 device = response.json()['state'].split(';')
                 if device[0] != "esphome_diyhue_light":
                     raise ValueError("Invalid device type")
@@ -129,7 +129,7 @@ def get_device_properties(ip: str, device_name: str, mac: str, ct_boost: str, rg
     if all(res.status_code != 200 for res in responses.values()):
         logging.debug("ESPHome: Device has improper configuration! Exiting.")
         raise ValueError("Improper configuration")
-    properties = {"ip": ip, "name": device_name, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
+    properties: dict[str, Any] = {"ip": ip, "name": device_name, "mac": mac, "ct_boost": ct_boost, "rgb_boost": rgb_boost}
     if responses["white"].status_code == 200 and responses["color"].status_code == 200:
         properties.update({"rgb": True, "ct": True, "esphome_model": "ESPHome-RGBW"})
         return properties, "LCT015"
@@ -147,7 +147,7 @@ def get_device_properties(ip: str, device_name: str, mac: str, ct_boost: str, rg
         return properties, "LOM001"
     raise ValueError("Unknown device")
 
-def set_light(light, data: dict[str, Any], rgb: List[int] = None) -> None:
+def set_light(light, data: dict[str, Any], rgb: Optional[List[int]] = None) -> None:
     """
     Set the state of the light.
 
@@ -175,7 +175,7 @@ def set_light(light, data: dict[str, Any], rgb: List[int] = None) -> None:
             request_data = addRequest(request_data, "transition", data.get('transitiontime', 4) / 10)
     postRequest(light.protocol_cfg["ip"], request_data)
 
-def handle_brightness_and_color(light, data: dict[str, Any], request_data: str, ct_boost: int, rgb_boost: int, rgb: List[int] = None) -> str:
+def handle_brightness_and_color(light, data: dict[str, Any], request_data: str, ct_boost: int, rgb_boost: int, rgb: Optional[List[int]] = None) -> str:
     """
     Handle the brightness and color settings for the light.
 

@@ -89,7 +89,7 @@ def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> Lis
         try:
             response = requests.get(f"http://{ip}/detect", timeout=3)
             response.raise_for_status()
-            if response.content and is_json(response.content):  # Check if response content is valid JSON
+            if response.content and is_json(response.text):  # Check if response content is valid JSON
                 device_data = response.json()
                 logging.debug(json.dumps(device_data))
 

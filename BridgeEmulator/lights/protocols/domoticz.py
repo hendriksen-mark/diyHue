@@ -1,6 +1,7 @@
 import json
 import requests
 import logManager
+from typing import Optional
 from functions.colors import convert_xy, rgbBrightness
 
 logging = logManager.logger.get_logger(__name__)
@@ -17,7 +18,7 @@ def send_request(url: str):
     except requests.RequestException as e:
         logging.error(f"Error sending request to {url}: {e}")
 
-def set_light(light, data: dict, rgb: tuple = None) -> None:
+def set_light(light, data: dict, rgb: Optional[tuple[int, int, int]] = None) -> None:
     if "on" in data:
         switch_cmd = "On" if data["on"] else "Off"
         url = build_url(light, "switchlight", f"switchcmd={switch_cmd}")
@@ -36,7 +37,7 @@ def set_light(light, data: dict, rgb: tuple = None) -> None:
             bri = data["bri"] if "bri" in data else light.state["bri"]
             color_data["m"] = 3
             if rgb:
-                color_data["r"], color_data["g"], color_data["b"] = rgbBrightness(rgb, bri)
+                color_data["r"], color_data["g"], color_data["b"] = rgbBrightness(list(rgb), bri)
             else:
                 color_data["r"], color_data["g"], color_data["b"] = convert_xy(xy[0], xy[1], bri)
 

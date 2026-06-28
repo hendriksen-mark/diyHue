@@ -89,7 +89,7 @@ def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> Non
             logging.error("<WLED> Error discovering device: %s", e)
 
 
-def set_light(light: dict[str, Any], data: dict[str, Any]) -> None:
+def set_light(light, data: dict[str, Any]) -> None:
     """
     Set the state of a WLED light.
     
@@ -111,7 +111,7 @@ def set_light(light: dict[str, Any], data: dict[str, Any]) -> None:
         send_light_data(wled_device, light, data)
 
 
-def send_light_data(wled_device: 'WledDevice', light: dict[str, Any], data: dict[str, Any]) -> None:
+def send_light_data(wled_device: 'WledDevice', light, data: dict[str, Any]) -> None:
     """
     Send light data to the WLED device.
     
@@ -147,7 +147,7 @@ def send_light_data(wled_device: 'WledDevice', light: dict[str, Any], data: dict
     wled_device.send_json(state)
 
 
-def get_light_state(light: dict[str, Any]) -> dict[str, Any]:
+def get_light_state(light) -> dict[str, Any]:
     """
     Get the current state of a WLED light.
     
@@ -212,12 +212,12 @@ def kelvin_to_rgb(temp: float) -> List[int]:
         RGB color as a list of integers
     """
     tmp_kelvin = clamp(temp, 1000, 40000) / 100
-    r = 255 if tmp_kelvin <= 66 else clamp(
-        329.698727446 * pow(tmp_kelvin - 60, -0.1332047592), 0, 255)
-    g = clamp(99.4708025861 * math.log(tmp_kelvin) - 161.1195681661, 0,
-              255) if tmp_kelvin <= 66 else clamp(288.1221695283 * (pow(tmp_kelvin - 60, -0.0755148492)), 0, 255)
-    b = 255 if tmp_kelvin >= 66 else 0 if tmp_kelvin <= 19 else clamp(
-        138.5177312231 * math.log(tmp_kelvin - 10) - 305.0447927307, 0, 255)
+    r = int(round(255 if tmp_kelvin <= 66 else clamp(
+        329.698727446 * pow(tmp_kelvin - 60, -0.1332047592), 0, 255)))
+    g = int(round(clamp(99.4708025861 * math.log(tmp_kelvin) - 161.1195681661, 0,
+              255) if tmp_kelvin <= 66 else clamp(288.1221695283 * (pow(tmp_kelvin - 60, -0.0755148492)), 0, 255)))
+    b = int(round(255 if tmp_kelvin >= 66 else 0 if tmp_kelvin <= 19 else clamp(
+        138.5177312231 * math.log(tmp_kelvin - 10) - 305.0447927307, 0, 255)))
     return [r, g, b]
 
 
@@ -271,24 +271,24 @@ class WledDevice:
         with urllib.request.urlopen(f"{self.url}/json") as resp:
             return json.loads(resp.read())
 
-    def get_seg_state(self, seg: int) -> dict[str, Any]:
+    def get_seg_state(self, segment_id: int) -> dict[str, Any]:
         """
         Get the state of a specific segment.
         
         Args:
-            seg: Segment ID
+            segment_id: Segment ID
             
         Returns:
             State of the segment
         """
-        state = {}
+        state: dict[str, Any] = {}
         data = self.get_light_state()['state']
-        seg = data['seg'][seg]
-        state['bri'] = seg['bri']
-        state['on'] = seg['on']
-        r = int(seg['col'][0][0])+1
-        g = int(seg['col'][0][1])+1
-        b = int(seg['col'][0][2])+1
+        segment_state: dict[str, Any] = data['seg'][segment_id]
+        state['bri'] = segment_state['bri']
+        state['on'] = segment_state['on']
+        r = int(segment_state['col'][0][0]) + 1
+        g = int(segment_state['col'][0][1]) + 1
+        b = int(segment_state['col'][0][2]) + 1
         state['xy'] = convert_rgb_xy(r, g, b)
         state["colormode"] = "xy"
         return state
@@ -339,5 +339,5 @@ class WledDevice:
         req.add_header('Content-Type', 'application/json; charset=utf-8')
         jsondata = json.dumps(data)
         jsondataasbytes = jsondata.encode('utf-8')
-        req.add_header('Content-Length', len(jsondataasbytes))
+        req.add_header('Content-Length', str(len(jsondataasbytes)))
         urllib.request.urlopen(req, jsondataasbytes)

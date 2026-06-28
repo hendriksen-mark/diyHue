@@ -33,7 +33,11 @@ def getObject(resource: str, id: str) -> Union[Sensor.Sensor, bool]:
     """
     if id in devicesIds[resource]:
         logging.debug(f"Cache Hit for {resource} {id}")
-        return devicesIds[resource][id]()
+        obj = devicesIds[resource][id]()
+        if obj is None:
+            del devicesIds[resource][id]
+            return False
+        return obj
     else:
         for key, device in bridgeConfig[resource].items():
             if device.protocol == "deconz" and device.protocol_cfg["deconzId"] == id:
@@ -148,9 +152,9 @@ def websocketClient() -> None:
             try:
                 if message["r"] == "sensors":
                     bridgeSensor = getObject("sensors", message["id"])
-                    if bridgeSensor and "config" in message and bridgeSensor.config["on"]:
+                    if isinstance(bridgeSensor, Sensor.Sensor) and "config" in message and bridgeSensor.config["on"]:
                         bridgeSensor.config.update(message["config"])
-                    elif bridgeSensor and "state" in message and message["state"] and bridgeSensor.config["on"]:
+                    elif isinstance(bridgeSensor, Sensor.Sensor) and "state" in message and message["state"] and bridgeSensor.config["on"]:
                         if bridgeSensor.modelid == "SML001" and "lightSensor" in bridgeSensor.protocol_cfg:
                             lightSensor = None
                             for key, sensor in bridgeConfig["sensors"].items():
@@ -190,7 +194,7 @@ def websocketClient() -> None:
                             bridgeConfig["config"]["alarm"]["lasttriggered"] = int(datetime.now().timestamp())
                 elif message["r"] == "lights":
                     bridgeLightId = getObject("lights", message["id"])
-                    if bridgeLightId and "state" in message and "colormode" not in message["state"]:
+                    if not isinstance(bridgeLightId, bool) and "state" in message and "colormode" not in message["state"]:
                         bridgeLightId.state.update(message["state"])
             except Exception as e:
                 logging.error(f"Unable to process the request: {e}")

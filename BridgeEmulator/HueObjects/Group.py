@@ -14,14 +14,14 @@ class Group:
         self.id_v2: str = data.get("id_v2", genV2Uuid())
         self.owner: Optional[ApiUser.ApiUser] = data.get("owner")
         self.icon_class: str = data.get("class", data.get("icon_class", "Other"))
-        self.lights: List[weakref.ReferenceType] = []
+        self.lights: List[weakref.ReferenceType[Light.Light]] = []
         self.action: dict[str, Union[bool, int, str, List[float]]] = {
             "on": False, "bri": 100, "hue": 0, "sat": 254, "effect": "none", "xy": [0.0, 0.0], "ct": 153, "alert": "none", "colormode": "xy"
         }
         self.sensors: List[weakref.ReferenceType] = []
         self.type: str = data.get("type", "LightGroup")
         self.state: dict[str, bool] = {"all_on": False, "any_on": False}
-        self.dxState: dict[str, Optional[bool]] = {"all_on": None, "any_on": None}
+        self.dxState: dict[str, Optional[datetime]] = {"all_on": None, "any_on": None}
 
         self._send_stream_event(self._get_v2_group(), "add")
 
@@ -51,12 +51,12 @@ class Group:
         self._send_stream_event({"id": element["id"], "id_v1": f"/groups/{self.id_v1}", "type": element["type"]}, "delete")
         logging.info(f"{self.name} group was destroyed.")
 
-    def add_light(self, light: Any) -> None:
+    def add_light(self, light: Light.Light) -> None:
         """
         Adds a light to the group and sends the appropriate stream events.
 
         Args:
-            light (Any): The light object to add.
+            light (Light.Light): The light object to add.
         """
         self.lights.append(weakref.ref(light))
         element = self._get_v2_group()
@@ -107,15 +107,16 @@ class Group:
         if not self.lights:
             all_on = False
         for light_ref in self.lights:
-            if light_ref():
-                light_instance: Light.Light = light_ref()
-                if light_instance.state["on"]:
-                    any_on = True
-                    if "bri" in light_instance.state:
-                        bri += light_instance.state["bri"]
-                        lights_on += 1
-                else:
-                    all_on = False
+            light_instance = light_ref()
+            if light_instance is None:
+                continue
+            if light_instance.state["on"]:
+                any_on = True
+                if "bri" in light_instance.state:
+                    bri += light_instance.state["bri"]
+                    lights_on += 1
+            else:
+                all_on = False
         if any_on:
             bri = (((bri / lights_on) / 254) * 100) if bri > 0 else 0
         return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
@@ -151,18 +152,19 @@ class Group:
         Args:
             v2State (dict[str, Any]): The V2 state to include in the stream event.
         """
-        streamMessage = {"data": []}
+        streamMessage: dict[str, List[dict[str, Any]]] = {"data": []}
         for num, light_ref in enumerate(self.lights):
-            if light_ref():
-                light_instance: Light.Light = light_ref()
-                streamMessage["data"].insert(num, {
-                    "id": light_instance.id_v2,
-                    "id_v1": f"/lights/{light_instance.id_v1}",
-                    "owner": {"rid": light_instance.getDevice()["id"], "rtype": "device"},
-                    "service_id": light_instance.protocol_cfg.get("light_nr", 1) - 1,
-                    "type": "light"
-                })
-                streamMessage["data"][num].update(v2State)
+            light_instance = light_ref()
+            if light_instance is None:
+                continue
+            streamMessage["data"].insert(num, {
+                "id": light_instance.id_v2,
+                "id_v1": f"/lights/{light_instance.id_v1}",
+                "owner": {"rid": light_instance.getDevice()["id"], "rtype": "device"},
+                "service_id": light_instance.protocol_cfg.get("light_nr", 1) - 1,
+                "type": "light"
+            })
+            streamMessage["data"][num].update(v2State)
         self._send_stream_event(streamMessage["data"], "update")
 
         if "on" in v2State:
@@ -181,17 +183,17 @@ class Group:
         streamMessage["data"][0].update(v2State)
         self._send_stream_event(streamMessage["data"][0], "update")
 
-    def _send_stream_event(self, data: dict[str, Any], event_type: str) -> None:
+    def _send_stream_event(self, data: Union[dict[str, Any], List[dict[str, Any]]], event_type: str) -> None:
         """
         Sends a stream event with the provided data and event type.
 
         Args:
-            data (dict[str, Any]): The data to include in the stream event.
+            data (Union[dict[str, Any], List[dict[str, Any]]]): The data to include in the stream event.
             event_type (str): The type of the event.
         """
         streamMessage = {
             "creationtime": self._current_time(),
-            "data": [data],
+            "data": data if isinstance(data, list) else [data],
             "id": str(uuid.uuid4()),
             "type": event_type,
             "id_v1": f"/groups/{self.id_v1}"
@@ -214,11 +216,11 @@ class Group:
         Returns:
             dict[str, Any]: The V1 API representation of the group.
         """
-        result = {"name": self.name}
+        result: dict[str, Any] = {"name": self.name}
         if hasattr(self, "owner") and self.owner is not None:
             result["owner"] = self.owner.username
-        result["lights"] = [light().id_v1 for light in self.lights if light()]
-        result["sensors"] = [sensor().id_v1 for sensor in self.sensors if sensor()]
+        result["lights"] = [light_instance.id_v1 for light_ref in self.lights if (light_instance := light_ref()) is not None]
+        result["sensors"] = [sensor_instance.id_v1 for sensor_ref in self.sensors if (sensor_instance := sensor_ref()) is not None]
         result["type"] = self.type.capitalize()
         result["state"] = self.update_state()
         result["recycle"] = False
@@ -333,9 +335,10 @@ class Group:
         if hasattr(self, "owner") and self.owner is not None:
             result["owner"] = self.owner.username
         for light_ref in self.lights:
-            if light_ref():
-                light_instance: Light.Light = light_ref()
-                result["lights"].append(light_instance.id_v1)
+            light_instance = light_ref()
+            if light_instance is None:
+                continue
+            result["lights"].append(light_instance.id_v1)
         return result
 
     def _update_group_children_and_services(self, element: dict[str, Any]) -> None:
@@ -348,9 +351,10 @@ class Group:
         groupChildren = []
         groupServices = []
         for light_ref in self.lights:
-            if light_ref():
-                light_instance: Light.Light = light_ref()
-                groupChildren.append({"rid": light_instance.getDevice()["id"], "rtype": "device"})
-                groupServices.append({"rid": light_instance.id_v2, "rtype": "light"})
+            light_instance = light_ref()
+            if light_instance is None:
+                continue
+            groupChildren.append({"rid": light_instance.getDevice()["id"], "rtype": "device"})
+            groupServices.append({"rid": light_instance.id_v2, "rtype": "light"})
         groupServices.append({"rid": self.id_v2, "rtype": "grouped_light"})
         self._send_stream_event({"children": groupChildren, "id": element["id"], "id_v1": f"/groups/{self.id_v1}", "services": groupServices, "type": element["type"]}, "update")

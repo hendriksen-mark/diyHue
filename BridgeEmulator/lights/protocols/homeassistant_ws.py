@@ -98,6 +98,9 @@ def set_light(light, data: dict[str, Any]) -> None:
     """
     try:
         connection = connect_if_required()
+        if connection is None:
+            logging.error("Error setting light state: Home Assistant WebSocket connection is not available")
+            return
         connection.change_light(light, data)
     except Exception as e:
         logging.error(f"Error setting light state: {e}")

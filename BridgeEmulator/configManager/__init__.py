@@ -1,3 +1,4 @@
+from typing import cast
 from configManager import configHandler
 from configManager import argumentHandler
 from configManager import runtimeConfigHandler
@@ -12,13 +13,22 @@ runtimeConfig.arg.update(args)
 
 # Set the config directories and args in bridgeConfig
 bridgeConfig.argsDict = args
-bridgeConfig.configDir = args["CONFIG_PATH"]
-bridgeConfig.runningDir = args["RUNNING_PATH"]
+config_path = args["CONFIG_PATH"]
+running_path = args["RUNNING_PATH"]
+
+if not isinstance(config_path, str):
+	raise TypeError("CONFIG_PATH must be a string")
+if not isinstance(running_path, str):
+	raise TypeError("RUNNING_PATH must be a string")
+
+bridgeConfig.configDir = config_path
+bridgeConfig.runningDir = running_path
 
 # Ensure config directory exists
 bridgeConfig.ensure_config_dir()
 
-argumentHandler.process_arguments(bridgeConfig, args)
+process_args = cast(dict[str, str | bool], args)
+argumentHandler.process_arguments(bridgeConfig, process_args)
 
 # Restore configuration
 bridgeConfig.load_config()

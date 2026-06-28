@@ -338,7 +338,11 @@ def entertainmentService(group: EntertainmentConfiguration.EntertainmentConfigur
                         prev_frame_time = new_frame_time
                         logging.info(f"Entertainment FPS: {fps}")
                 else:
-                    logging.info("HueStream was missing in the frame")
+                    try:
+                        header = data[:9].decode('utf-8', errors='replace')
+                    except:
+                        header = "unable to decode"
+                    logging.error(f"HueStream header missing in frame. Expected 'HueStream', got: '{header}' (hex: {data[:9].hex()})")
                     p.kill()
                     try:
                         h.disconnect()

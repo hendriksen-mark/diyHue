@@ -1,6 +1,6 @@
 import logManager
 import json
-from typing import Any
+from typing import Any, cast
 
 # External
 import paho.mqtt.publish as publish
@@ -21,7 +21,7 @@ def create_payload(lightsData: dict[str, Any], light) -> dict[str, Any]:
     Returns:
         dict[str, Any]: The payload for the MQTT message.
     """
-    payload = {"transition": 0.3}
+    payload: dict[str, Any] = {"transition": 0.3}
     colorFromHsv = False
     for key, value in lightsData.items():
         if key == "on":
@@ -44,7 +44,7 @@ def create_payload(lightsData: dict[str, Any], light) -> dict[str, Any]:
         elif key == "alert" and value != "none":
             payload['alert'] = value
         elif key == "transitiontime":
-            payload['transition'] = value / 10
+            payload['transition'] = float(value) / 10
         elif key == "effect":
             payload["effect"] = value
     if colorFromHsv:
@@ -71,7 +71,7 @@ def set_light(light, data: dict[str, Any]) -> None:
     auth = None
     mqtt_server = light.protocol_cfg["mqtt_server"]
     if mqtt_server["mqttUser"] and mqtt_server["mqttPassword"]:
-        auth = {'username': mqtt_server["mqttUser"], 'password': mqtt_server["mqttPassword"]}
+        auth = cast(Any, {"username": str(mqtt_server["mqttUser"]), "password": str(mqtt_server["mqttPassword"])})
     publish.multiple(messages, hostname=mqtt_server["mqttServer"], port=mqtt_server["mqttPort"], auth=auth)
 
 def discover(mqtt_config: dict[str, Any]) -> None:
@@ -85,7 +85,7 @@ def discover(mqtt_config: dict[str, Any]) -> None:
         logging.info("MQTT discovery called")
         auth = None
         if mqtt_config["mqttUser"] and mqtt_config["mqttPassword"]:
-            auth = {'username': mqtt_config["mqttUser"], 'password': mqtt_config["mqttPassword"]}
+            auth = cast(Any, {"username": str(mqtt_config["mqttUser"]), "password": str(mqtt_config["mqttPassword"])})
         try:
             publish.single("zigbee2mqtt/bridge/request/permit_join", json.dumps({"value": True, "time": 120}), hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)
             publish.single("zigbee2mqtt/bridge/config/devices/get", hostname=mqtt_config["mqttServer"], port=mqtt_config["mqttPort"], auth=auth)

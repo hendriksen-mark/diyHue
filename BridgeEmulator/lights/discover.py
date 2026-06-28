@@ -94,7 +94,7 @@ def addNewLight(modelid: str, name: str, protocol: str, protocol_cfg: dict) -> U
     Returns:
         Union[int, bool]: The ID of the new light or False if the model ID is not found.
     """
-    newLightID = nextFreeId(bridgeConfig, "lights")
+    newLightID: int = int(nextFreeId(bridgeConfig, "lights"))
     if modelid in lightTypes:
         light: dict = lightTypes[modelid]
         light.update({
@@ -233,7 +233,6 @@ def discover_lights(detectedLights: List[dict], device_ips: List[str]) -> None:
         device_ips (List[str]): A list of device IP addresses to scan.
     """
     if bridgeConfig["config"]["mqtt"]["enabled"]:
-        # brioadcast MQTT message, lights will be added by the service
         mqtt.discover(bridgeConfig["config"]["mqtt"])
     if bridgeConfig["config"]["deconz"]["enabled"]:
         deconz.discover(detectedLights, bridgeConfig["config"]["deconz"])
@@ -241,14 +240,11 @@ def discover_lights(detectedLights: List[dict], device_ips: List[str]) -> None:
         homeAssistantWS.discover(detectedLights)
     if bridgeConfig["config"]["yeelight"]["enabled"]:
         yeelight.discover(detectedLights)
-    # native_multi probe all esp8266 lights with firmware from diyhue repo
     if bridgeConfig["config"]["native_multi"]["enabled"]:
         native_multi.discover(detectedLights, device_ips)
     if bridgeConfig["config"]["tasmota"]["enabled"]:
         tasmota.discover(detectedLights, device_ips)
     if bridgeConfig["config"]["wled"]["enabled"]:
-        # Most of the other discoveries are disabled by having no IP address (--disable-network-scan)
-        # But wled does an mdns discovery as well.
         wled.discover(detectedLights, device_ips)
     if bridgeConfig["config"]["hue"]:
         hue.discover(detectedLights, bridgeConfig["config"]["hue"])
@@ -263,14 +259,13 @@ def discover_lights(detectedLights: List[dict], device_ips: List[str]) -> None:
     if bridgeConfig["config"]["tpkasa"]["enabled"]:
         tpkasa.discover(detectedLights)
     if bridgeConfig["config"]["elgato"]["enabled"]:
-        # Scan with port 9123 before mDNS discovery
         elgato_ips = find_hosts(9123)
         logging.info(pretty_json(elgato_ips))
         elgato.discover(detectedLights, elgato_ips)
     if bridgeConfig["config"]["govee"]["enabled"]:
         govee.discover(detectedLights)
 
-def scanForLights() -> dict:  # scan for ESP8266 lights and strips
+def scanForLights() -> dict:
     """
     Scan for ESP8266 lights and strips.
 

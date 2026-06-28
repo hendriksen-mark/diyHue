@@ -2,6 +2,7 @@ import socket
 import json
 import requests
 import logManager
+from typing import Optional
 from time import sleep
 from zeroconf import IPVersion, ServiceBrowser, ServiceStateChange, Zeroconf
 
@@ -75,7 +76,7 @@ def translate_range(value: float, old_min: float, old_max: float, new_min: float
     scaled_value = (((value - old_min) * new_range) / old_range) + new_min
     return int(max(min(scaled_value, new_max), new_min))
 
-def set_light(light, data: dict) -> None:
+def set_light(light, data: dict) -> Optional[str]:
     """
     Set the state of the light.
     """
@@ -96,6 +97,8 @@ def set_light(light, data: dict) -> None:
         json_data = json.dumps({"lights": [light_state]})
         response = requests.put(f"http://{light.protocol_cfg['ip']}:9123/elgato/lights", data=json_data, headers={'Content-type': 'application/json'}, timeout=3)
         return response.text
+
+    return None
 
 def get_light_state(light) -> dict:
     """

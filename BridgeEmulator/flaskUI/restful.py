@@ -17,7 +17,7 @@ from services.entertainment import entertainmentService
 from services.updateManager import githubCheck, versionCheck, githubInstall
 from werkzeug.security import generate_password_hash
 from lights.light_types import lightTypes
-from typing import Any
+from typing import Any, Sequence, TypeAlias, cast
 
 try:
     from time import tzset
@@ -27,20 +27,22 @@ except ImportError:
 logging = logManager.logger.get_logger(__name__)
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
+ApiResponse: TypeAlias = list[dict[str, Any]]
+AuthorizedResponse: TypeAlias = Sequence[dict[str, Any] | str]
 
 def GroupZeroMessage() -> None:
     rooms = []
     lights = []
     for group, obj in bridgeConfig["groups"].items():
-        obj: Group.Group = obj
-        rooms.append(obj.id_v2)
+        group_obj: Group.Group = obj
+        rooms.append(group_obj.id_v2)
     for light, obj in bridgeConfig["lights"].items():
-        obj: Light.Light = obj
-        lights.append(obj.id_v2)
+        light_obj: Light.Light = obj
+        lights.append(light_obj.id_v2)
     groupZero: Group.Group = bridgeConfig["groups"]["0"]
     groupZero.groupZeroStream(rooms, lights)
 
-def authorize(username: str, resource: str = '', resourceId: str = '', resourceParam: str = '') -> list[dict[str, Any]]:
+def authorize(username: str, resource: str = '', resourceId: str = '', resourceParam: str = '') -> AuthorizedResponse:
     if username not in bridgeConfig["apiUsers"] and request.remote_addr != "127.0.0.1":
         return [{"error": {"type": 1, "address": "/" + resource + "/" + resourceId, "description": "unauthorized user"}}]
 
@@ -79,13 +81,16 @@ class NewUser(Resource):
         return [{"error": {"type": 4, "address": "/api", "description": "method, GET, not available for resource, /"}}]
 
     def post(self) -> list[dict[str, Any]]:
-        postDict: dict[str, str | int | float | bool | dict[str, str | int | float | bool]] = request.get_json(force=True)
+        postDict: dict[str, Any] = request.get_json(force=True)
         logging.info(postDict)
         if "devicetype" in postDict:
+            devicetype = postDict["devicetype"]
+            if not isinstance(devicetype, str):
+                return [{"error": {"type": 6, "address": "/api/devicetype", "description": "parameter, devicetype, invalid value"}}]
             last_button_press = bridgeConfig["config"]["linkbutton"]["lastlinkbuttonpushed"]
             if last_button_press + 30 >= datetime.now().timestamp(): # 30 sec offset
                 username = str(uuid.uuid1()).replace('-', '')
-                if postDict["devicetype"].startswith("Hue Essentials"):
+                if devicetype.startswith("Hue Essentials"):
                     username = "hueess" + username[-26:]
                 response = [{"success": {"username": username}}]
                 client_key = None
@@ -94,7 +99,7 @@ class NewUser(Resource):
                     # client_key = "321c0c2ebfa7361e55491095b2f5f9db"
 
                     response[0]["success"]["clientkey"] = client_key
-                bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, postDict["devicetype"], client_key)
+                bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, devicetype, client_key or "")
                 logging.info(response)
                 configManager.bridgeConfig.save_config()
                 return response
@@ -117,7 +122,7 @@ class ShortConfig(Resource):
 
 
 class EntireConfig(Resource):
-    def get(self, username: str) -> dict[str, Any]:
+    def get(self, username: str) -> Any:
         authorisation = authorize(username)
         if "success" not in authorisation:
             return authorisation
@@ -132,7 +137,7 @@ class EntireConfig(Resource):
 
 
 class ResourceElements(Resource):
-    def get(self, username: str, resource: str) -> dict[str, Any]:
+    def get(self, username: str, resource: str) -> dict[str, Any] | list[dict[str, Any]]:
         authorisation = authorize(username)
         if "success" in authorisation:
             if resource == "capabilities":
@@ -146,7 +151,7 @@ class ResourceElements(Resource):
                     response = buildConfig()
                 elif resource == "all_data":
                     getResources = ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "behavior_instance", "smart_scene", "apiUsers"]
-                    response = {
+                    response: dict[str, Any] = {
                         resource: {key: obj.save() for key, obj in bridgeConfig[resource].items()} for resource in getResources
                     }
                     for resource in getResources:
@@ -180,7 +185,7 @@ class ResourceElements(Resource):
             return {"name": config["name"], "datastoreversion": staticConfig()["datastoreversion"], "swversion": config["swversion"], "apiversion": config["apiversion"], "mac": config["mac"], "bridgeid": config["bridgeid"], "factorynew": config["factorynew"], "replacesbridgeid": None, "modelid": staticConfig()["modelid"], "starterkitid": ""}
         return [{"error": {"type": 1, "address": "/", "description": "unauthorized user"}}]
 
-    def post(self, username: str, resource: str) -> list[dict[str, Any]]:
+    def post(self, username: str, resource: str) -> AuthorizedResponse:
         authorisation = authorize(username, resource)
         if "success" not in authorisation:
             return authorisation
@@ -244,20 +249,26 @@ class ResourceElements(Resource):
                     scene.lightstates[bridgeConfig["lights"][light]] = state
             else:
                 if "group" in postDict:
-                    group: Group.Group = postDict["group"]()
-                    for light in group.lights:
-                        light: Light.Light = light()
+                    group = cast(Group.Group, postDict["group"]())
+                    for light_ref in group.lights:
+                        light = cast(Light.Light | None, light_ref())
+                        if light is None:
+                            continue
                         scene.lightstates[light] = {
                             "on": light.state["on"]}
                 elif "lights" in postDict:
-                    for light in postDict["lights"]:
-                        light: Light.Light = light()
+                    for light_ref in postDict["lights"]:
+                        light = cast(Light.Light | None, light_ref())
+                        if light is None:
+                            continue
                         scene.lightstates[light] = {
                             "on": light.state["on"]}
                 # add remaining state details in one shot.
                 sceneStates = list(scene.lightstates.items())
-                for light, state in sceneStates:
-                    light: Light.Light = light()
+                for light_ref, state in sceneStates:
+                    light = cast(Light.Light | None, light_ref())
+                    if light is None:
+                        continue
                     if "bri" in light.state:
                         state["bri"] = light.state["bri"]
                     if "colormode" in light.state:
@@ -308,7 +319,7 @@ class ResourceElements(Resource):
         configManager.bridgeConfig.save_config(backup=False, resource=resource)
         return [{"success": {"id": new_object_id}}]
 
-    def put(self, username: str, resource: str) -> list[dict[str, Any]]:
+    def put(self, username: str, resource: str) -> AuthorizedResponse:
         authorisation = authorize(username, resource)
         if "success" not in authorisation:
             return authorisation
@@ -372,7 +383,7 @@ class Element(Resource):
             return bridgeConfig[resource][resourceid].getV1Api()
         return bridgeConfig[resource][resourceid]
 
-    def put(self, username: str, resource: str, resourceid: str) -> list[dict[str, Any]]:
+    def put(self, username: str, resource: str, resourceid: str) -> AuthorizedResponse:
         authorisation = authorize(username, resource, resourceid)
         if "success" not in authorisation:
             return authorisation
@@ -425,7 +436,11 @@ class Element(Resource):
                 for scene in list(bridgeConfig["scenes"].keys()):
                     scene: Scene.Scene = bridgeConfig["scenes"][scene]
                     if scene.type == "GroupScene":
-                        if scene.group().id_v1 == resourceid:
+                        group_ref = scene.group
+                        if group_ref is None:
+                            continue
+                        group = cast(Group.Group | None, group_ref())
+                        if group is not None and group.id_v1 == resourceid:
                             del bridgeConfig["scenes"][scene]
             if "locations" in putDict:
                 for light, location in putDict["locations"].items():
@@ -435,7 +450,7 @@ class Element(Resource):
         logging.debug(responseList)
         return responseList
 
-    def delete(self, username: str, resource: str, resourceid: str) -> list[dict[str, Any]]:
+    def delete(self, username: str, resource: str, resourceid: str) -> AuthorizedResponse:
         authorisation = authorize(username, resource, resourceid)
         if "success" not in authorisation:
             return authorisation
@@ -461,7 +476,11 @@ class Element(Resource):
             for scene in list(bridgeConfig["scenes"].keys()):
                 scene: Scene.Scene = bridgeConfig["scenes"][scene]
                 if scene.type == "GroupScene":
-                    if scene.group().id_v1 == resourceid:
+                    group_ref = scene.group
+                    if group_ref is None:
+                        continue
+                    group = cast(Group.Group | None, group_ref())
+                    if group is not None and group.id_v1 == resourceid:
                         del bridgeConfig["scenes"][scene]
         if resource in ["groups", "lights"]:
             GroupZeroMessage() # trigger stream messages
@@ -479,7 +498,7 @@ class ElementParam(Resource):
             return authorisation
         return bridgeConfig[resource][resourceid].getV1Api()[param]
 
-    def put(self, username: str, resource: str, resourceid: str, param: str) -> list[dict[str, Any]]:
+    def put(self, username: str, resource: str, resourceid: str, param: str) -> AuthorizedResponse:
         authorisation = authorize(username, resource, resourceid, param)
         if "success" not in authorisation:
             return authorisation
@@ -522,7 +541,7 @@ class ElementParam(Resource):
         logging.debug(responseList)
         return responseList
 
-    def delete(self, username: str, resource: str, resourceid: str, param: str) -> list[dict[str, Any]]:
+    def delete(self, username: str, resource: str, resourceid: str, param: str) -> AuthorizedResponse:
         authorisation = authorize(username, resource, resourceid)
         if "success" not in authorisation:
             return authorisation
@@ -553,7 +572,7 @@ class ElementParamId(Resource):
             return authorisation
         return bridgeConfig[resource][resourceid].getV1Api()[param][paramid]
 
-    def put(self, username: str, resource: str, resourceid: str, param: str, paramid: str) -> list[dict[str, Any]]:
+    def put(self, username: str, resource: str, resourceid: str, param: str, paramid: str) -> AuthorizedResponse:
         authorisation = authorize(username, resource, resourceid, param)
         if "success" not in authorisation:
             return authorisation

@@ -49,16 +49,19 @@ def _write_yaml(path: str, contents: Any) -> None:
         yaml.dump(contents, fp, Dumper=NoAliasDumper, allow_unicode=True, sort_keys=False)
 
 class Config:
-    yaml_config: Optional[dict[str, Any]] = None
-    argsDict: dict[str, Any] = {}
-    configDir: str = ""
-    runningDir: str = ""
+    yaml_config: dict[str, Any]
+    argsDict: dict[str, Any]
+    configDir: str
+    runningDir: str
 
     def __init__(self) -> None:
         """
         Initialize the Config class.
         """
-        pass
+        self.yaml_config = {}
+        self.argsDict = {}
+        self.configDir = ""
+        self.runningDir = ""
 
     def ensure_config_dir(self) -> None:
         """
@@ -67,7 +70,7 @@ class Config:
         if self.configDir and not os.path.exists(self.configDir):
             os.makedirs(self.configDir)
 
-    def _set_default_config_values(self, config: dict[str, Any]) -> None:
+    def _set_default_config_values(self, config: dict[str, Any]) -> dict[str, Any]:
         """
         Set default configuration values.
 
@@ -128,7 +131,7 @@ class Config:
                 config[key] = value
         return config
 
-    def _upgrade_config(self, config: dict[str, Any]) -> None:
+    def _upgrade_config(self, config: dict[str, Any]) -> dict[str, Any]:
         """
         Upgrade the configuration if necessary.
 
@@ -147,7 +150,7 @@ class Config:
             config["linkbutton"] = {"lastlinkbuttonpushed": 1599398980}
         return config
 
-    def _load_yaml_file(self, filename: str, default: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
+    def _load_yaml_file(self, filename: str, default: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """
         Load a YAML file and return its contents.
 
@@ -156,12 +159,14 @@ class Config:
             default (Optional[dict[str, Any]]): The default value if the file does not exist.
 
         Returns:
-            Optional[dict[str, Any]]: The contents of the YAML file or the default value.
+            dict[str, Any]: The contents of the YAML file or the default value.
         """
         path = os.path.join(self.configDir, filename)
+        fallback = default if default is not None else {}
         if os.path.exists(path):
-            return _open_yaml(path)
-        return default
+            data = _open_yaml(path)
+            return data if isinstance(data, dict) else fallback
+        return fallback
 
     def _load_lights(self) -> None:
         """
@@ -386,7 +391,7 @@ class Config:
             logging.info("Certificate removed")
         except subprocess.CalledProcessError:
             logging.exception("Something went wrong when deleting the certificate")
-        generate_certificate(self.argsDict["MAC"], self.argsDict["CONFIG_PATH"])
+        generate_certificate(self.argsDict["MAC"], self.configDir, self.runningDir)
 
     def restore_backup(self) -> None:
         """

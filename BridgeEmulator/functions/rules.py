@@ -71,7 +71,7 @@ def evaluate_time_condition(value: str) -> bool:
         return time_start <= now_time or now_time <= time_end
     return False
 
-def checkRuleConditions(rule: Rule.Rule, device: Any, current_time: datetime, ignore_ddx: bool = False) -> Union[Tuple[bool, int, List[str]], Tuple[bool]]:
+def checkRuleConditions(rule: Rule.Rule, device: Any, current_time: datetime, ignore_ddx: bool = False) -> Tuple[bool, int, List[str]]:
     """
     Check all conditions for a rule.
 
@@ -82,7 +82,7 @@ def checkRuleConditions(rule: Rule.Rule, device: Any, current_time: datetime, ig
         ignore_ddx (bool): Whether to ignore ddx conditions.
 
     Returns:
-        Union[Tuple[bool, int, List[str]], Tuple[bool]]: A tuple containing the result of the check, delay if any, and sensor details.
+        Tuple[bool, int, List[str]]: A tuple containing the result of the check, delay if any, and sensor details.
     """
     ddx = 0
     device_found = False
@@ -90,13 +90,13 @@ def checkRuleConditions(rule: Rule.Rule, device: Any, current_time: datetime, ig
     for condition in rule.conditions:
         result, delay, sensor = evaluate_condition(condition, device, current_time)
         if not result:
-            return [False, 0]
+            return (False, 0, [])
         if delay > 0:
             ddx = delay
             ddx_sensor = sensor
         device_found = True
 
-    return [True, ddx, ddx_sensor] if device_found else [False]
+    return (True, ddx, ddx_sensor) if device_found else (False, 0, [])
 
 def ddxRecheck(rule: Rule.Rule, device: Any, current_time: datetime, ddx_delay: int, ddx_sensor: List[str]) -> None:
     """

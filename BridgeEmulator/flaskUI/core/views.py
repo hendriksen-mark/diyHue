@@ -1,5 +1,6 @@
-from flask import render_template, request, Blueprint, redirect, url_for, make_response, send_file, Response
+from flask import render_template, request, Blueprint, redirect, url_for, make_response, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.wrappers.response import Response
 from flaskUI.core.forms import LoginForm
 import flask_login
 import uuid
@@ -47,7 +48,7 @@ def get_key() -> str:
     """
     if not bridgeConfig["apiUsers"]:
         username = str(uuid.uuid1()).replace('-', '')
-        bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, 'WebUi', None)
+        bridgeConfig["apiUsers"][username] = ApiUser.ApiUser(username, 'WebUi', '')
         configManager.bridgeConfig.save_config()
     return list(bridgeConfig["apiUsers"])[0]
 
@@ -90,7 +91,7 @@ def get_light_types() -> Union[dict[str, Any], str]:
     """
     if request.method == 'GET':
         return {"result": list(lightTypes.keys())}
-    elif request.method == 'POST':
+    else:
         data = request.get_json(force=True)
         lightId, modelId = list(data.items())[0]
         light: Light.Light = bridgeConfig["lights"][lightId]
@@ -285,15 +286,17 @@ def login() -> Union[str, Response]:
     if request.method == 'GET':
         return render_template('login.html', form=form)
     email = form.email.data
+    password = form.password.data
     if email not in bridgeConfig["config"]["users"]:
         return 'User don\'t exist\n'
-    if check_password_hash(bridgeConfig["config"]["users"][email]['password'], form.password.data):
+    if password is not None and check_password_hash(bridgeConfig["config"]["users"][email]['password'], password):
         user = User()
-        user.id = email
+        user.get_id = lambda: email or ""
         flask_login.login_user(user)
         return redirect(url_for('core.index'))
 
-    logging.info(f"Hashed pass: {generate_password_hash(form.password.data)}")
+    if password is not None:
+        logging.info(f"Hashed pass: {generate_password_hash(password)}")
     return 'Bad login\n'
 
 @core.route('/description.xml')

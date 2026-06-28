@@ -19,7 +19,7 @@ from typing import Any, cast
 
 logging = logManager.logger.get_logger(__name__)
 
-bridgeConfig = configManager.bridgeConfig.yaml_config
+bridgeConfig = cast(dict[str, Any], configManager.bridgeConfig.yaml_config)
 
 v2Resources = {"light": {}, "scene": {}, "smart_scene": {}, "grouped_light": {}, "room": {}, "zone": {
 }, "entertainment": {}, "entertainment_configuration": {}, "zigbee_connectivity": {}, "zigbee_device_discovery": {}, "device": {}, "device_power": {},
@@ -64,7 +64,7 @@ def authorizeV2(headers):
         user: ApiUser.ApiUser = bridgeConfig["apiUsers"][headers["hue-application-key"]]
         user.last_use_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
         return {"user": user}
-    return []
+    return {}
 
 def v2BridgeEntertainment():
     return {"id": "57a9ebc9-406d-4a29-a4ff-42acee9e9be7",
@@ -196,7 +196,7 @@ def geoLocation():
 def v2BridgeDevice():
     config = bridgeConfig["config"]
     bridge_id = config["bridgeid"]
-    result = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
+    result: dict[str, Any] = {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, bridge_id + 'device')), "type": "device"}
     result["id_v1"] = ""
     result["metadata"] = {"archetype": "bridge_v2", "name": config["name"]}
     result["identify"] = {}
@@ -572,7 +572,9 @@ class ClipV2Resource(Resource):
                 for children in postDict["children"]:
                     obj = getObject(
                         children["rtype"], children["rid"])
-                    newObject.add_light(obj)
+                    if hasattr(newObject, "add_light"):
+                        obj = cast(Light.Light, obj)
+                        newObject.add_light(obj)
 
             bridgeConfig["groups"][new_object_id] = newObject
         elif resource == 'geofence_client':
@@ -672,30 +674,30 @@ class ClipV2ResourceId(Resource):
         logging.info(putDict)
         object = getObject(resource, resourceid)
         if resource == "light":
-            light_object: Light.Light = object
+            light_object = cast(Light.Light, object)
             putDict["controlled_service"] = "manual"
             light_object.setV2State(putDict)
         elif resource == "entertainment_configuration":
             if "action" in putDict:
-                e_object: EntertainmentConfiguration.EntertainmentConfiguration = object
+                e_object = cast(EntertainmentConfiguration.EntertainmentConfiguration, object)
                 if putDict["action"] == "start":
                     logging.info("start hue entertainment")
                     Thread(target=entertainmentService, args=[
                            e_object, authorisation["user"]]).start()
                     for e_light in e_object.lights:
-                        e_light: Light.Light = e_light
+                        e_light = cast(Light.Light, e_light)
                         e_light.update_attr({"state": {"mode": "streaming"}})
                     e_object.update_attr({"stream": {"active": True, "owner": authorisation["user"].username, "proxymode": "auto", "proxynode": "/bridge"}})
                     sleep(1)
                 elif putDict["action"] == "stop":
                     logging.info("stop entertainment")
                     for e_light in e_object.lights:
-                        e_light: Light.Light = e_light
+                        e_light = cast(Light.Light, e_light)
                         e_light.update_attr({"state": {"mode": "homeautomation"}})
                     Popen(["killall", "openssl"])
                     e_object.update_attr({"stream": {"active": False}})
         elif resource == "scene":
-            scene_object: Scene.Scene = object
+            scene_object = cast(Scene.Scene, object)
             if "recall" in putDict:
                 scene_object.activate(putDict)
             if "speed" in putDict:
@@ -705,7 +707,7 @@ class ClipV2ResourceId(Resource):
             if "metadata" in putDict:
                 scene_object.name = putDict["metadata"]["name"]
         elif resource == "smart_scene":
-            smart_scene_object: SmartScene.SmartScene = object
+            smart_scene_object = cast(SmartScene.SmartScene, object)
             if "recall" in putDict and "action" in putDict["recall"]:
                 smart_scene_object.activate(putDict)
             if "transition_duration" in putDict:
@@ -718,7 +720,7 @@ class ClipV2ResourceId(Resource):
             if "metadata" in putDict:
                 smart_scene_object.name = putDict["metadata"]["name"]
         elif resource == "grouped_light":
-            group_object: Group.Group = object
+            group_object = cast(Group.Group, object)
             putDict["controlled_service"] = "manual"
             group_object.setV2Action(putDict)
         elif resource == "geolocation":
@@ -727,10 +729,10 @@ class ClipV2ResourceId(Resource):
             geolocation_object.config["configured"] = True
             daylightSensor(bridgeConfig["config"]["timezone"], geolocation_object)
         elif resource == "behavior_instance":
-            behavior_instance_object: BehaviorInstance.BehaviorInstance = object
+            behavior_instance_object = cast(BehaviorInstance.BehaviorInstance, object)
             behavior_instance_object.update_attr(putDict)
         elif resource in ["room", "zone"]:
-            room_zone_object: Group.Group = object
+            room_zone_object = cast(Group.Group, object)
             v1Api = {}
             if "metadata" in putDict:
                 if "name" in putDict["metadata"]:
@@ -740,10 +742,12 @@ class ClipV2ResourceId(Resource):
             if "children" in putDict:
                 for children in putDict["children"]:
                     obj = getObject(children["rtype"], children["rid"])
-                    room_zone_object.add_light(obj)
+                    obj = cast(Light.Light, obj)
+                    if hasattr(room_zone_object, "add_light"):
+                        room_zone_object.add_light(obj)
             room_zone_object.update_attr(v1Api)
         elif resource == 'geofence_client':
-            geofence_client_object: GeofenceClient.GeofenceClient = object
+            geofence_client_object = cast(GeofenceClient.GeofenceClient, object)
             attrs = {}
             if "name" in putDict:
                 attrs['name'] = putDict['name']
@@ -756,7 +760,8 @@ class ClipV2ResourceId(Resource):
                 Thread(target=scanForLights).start()
         elif resource == "device":
             if "identify" in putDict and putDict["identify"]["action"] == "identify":
-                object.setV1State({"alert": "select"})
+                if object:
+                    object.setV1State({"alert": "select"})
             if "metadata" in putDict:
                 if "name" in putDict["metadata"]:
                     if object:
@@ -777,7 +782,7 @@ class ClipV2ResourceId(Resource):
                         StreamEvent(streamMessage)
                     configManager.bridgeConfig.save_config(backup=False, resource="config")
         elif resource == "motion":
-            motion_object: Sensor.Sensor = object
+            motion_object = cast(Sensor.Sensor, object)
             if "enabled" in putDict:
                 motion_object.update_attr({"config": {"on": putDict["enabled"]}})
         else:
@@ -801,7 +806,7 @@ class ClipV2ResourceId(Resource):
             return "", 403
         object = getObject(resource, resourceid)
 
-        if hasattr(object, 'getObjectPath'):
+        if object and hasattr(object, 'getObjectPath'):
             del bridgeConfig[object.getObjectPath()["resource"]
                              ][object.getObjectPath()["id"]]
         else:

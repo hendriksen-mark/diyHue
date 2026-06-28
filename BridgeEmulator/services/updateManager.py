@@ -130,6 +130,8 @@ def get_github_publish_time(url: str) -> str:
             return datetime.strptime(device_data["commit"]["commit"]["author"]["date"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
         elif "published_at" in device_data:
             return datetime.strptime(device_data["published_at"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d %H")
+        logging.error(f"Unexpected GitHub API response format for URL {url}: {device_data}")
+        return "1970-01-01 00:00:00"
     except requests.RequestException as e:
         logging.error(f"No connection to GitHub: {e}")
         return "1970-01-01 00:00:00"

@@ -37,7 +37,7 @@ def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> Non
             logging.debug('shelly: probing ip ' + ip)
             response = requests.get('http://' + ip + '/shelly', timeout = 5)
             response.raise_for_status()
-            if response.content and is_json(response.content):  # Check if response content is valid JSON
+            if response.text and is_json(response.text):  # Check if response content is valid JSON
                 logging.debug('Shelly: ' + ip + ' is a shelly device ')
                 device_data = json.loads(response.text)
 

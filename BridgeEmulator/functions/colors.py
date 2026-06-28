@@ -11,7 +11,7 @@ def rgbBrightness(rgb: List[int], brightness: float) -> List[int]:
     Returns:
         List of adjusted RGB values.
     """
-    return [min(max((color * brightness) >> 8, 0), 255) for color in rgb]
+    return [min(max((int(color * brightness)) >> 8, 0), 255) for color in rgb]
 
 def clampRGB(rgb: List[float]) -> List[int]:
     """
@@ -93,10 +93,10 @@ def hsv_to_rgb(h: int, s: int, v: int) -> List[int]:
     Returns:
         List of RGB values [R, G, B].
     """
-    s, v = s / 254, v / 254
-    c = v * s
+    s_norm, v_norm = s / 254, v / 254
+    c = v_norm * s_norm
     x = c * (1 - abs((h / 11850) % 2 - 1))
-    m = v - c
+    m = v_norm - c
 
     if h < 10992:
         r, g, b = c, x, 0

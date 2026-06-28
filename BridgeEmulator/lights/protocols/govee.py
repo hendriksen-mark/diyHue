@@ -1,7 +1,7 @@
 import json
 import logManager
 from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb
-from typing import List, Any, Generator, Tuple
+from typing import List, Any, Generator, Tuple, Optional
 import socket
 import struct
 import base64
@@ -98,12 +98,12 @@ def send_and_receive(sock: socket.socket, message: dict, ip: str, port: int, is_
     except socket.error:
         return False
 
-def create_socket(timeout: int, reuse: bool = False) -> socket.socket:
+def create_socket(timeout: float, reuse: bool = False) -> socket.socket:
     """
     Create or reuse a UDP socket with the specified timeout.
 
     Args:
-        timeout (int): The timeout value for the socket in seconds.
+        timeout (float): The timeout value for the socket in seconds.
         reuse (bool, optional): Whether to reuse an existing socket. Defaults to False.
 
     Returns:
@@ -129,14 +129,14 @@ def close_shared_socket() -> None:
         shared_socket.close()
         shared_socket = None
 
-def scan(ip: str = MULTICAST_GROUP, port: int = DISCOVER_PORT, timeout: int = 5) -> int:
+def scan(ip: str = MULTICAST_GROUP, port: int = DISCOVER_PORT, timeout: float = 5) -> int:
     """
     Scan for devices using multicast or unicast.
 
     Args:
         ip (str, optional): The IP address to scan. Defaults to MULTICAST_GROUP.
         port (int, optional): The port to scan. Defaults to DISCOVER_PORT.
-        timeout (int, optional): The timeout for the scan in seconds. Defaults to 5.
+        timeout (float, optional): The timeout for the scan in seconds. Defaults to 5.
 
     Returns:
         int: 0 if devices were found, 1 otherwise.
@@ -256,7 +256,7 @@ def set_light(light, data: dict[str, Any]) -> None:
     except socket.error:
         pass
 
-def create_request_data(light, data: dict[str, Any], data_type: str) -> dict[str, Any]:
+def create_request_data(light, data: dict[str, Any], data_type: str) -> Optional[dict[str, Any]]:
     """
     Create the request data for setting the state of a Govee light.
 
@@ -266,7 +266,7 @@ def create_request_data(light, data: dict[str, Any], data_type: str) -> dict[str
         data_type (str): The type of data to set (e.g., "on", "bri", "xy").
 
     Returns:
-        dict[str, Any]: The request data, or None if the data type is unsupported.
+        Optional[dict[str, Any]]: The request data, or None if the data type is unsupported.
     """
     try:
         request_data = {"msg": {}}

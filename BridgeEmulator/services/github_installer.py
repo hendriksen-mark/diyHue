@@ -20,7 +20,13 @@ class GitHubInstaller:
     def __init__(self):
         self.server_path = Path(configManager.bridgeConfig.runningDir)
         self.config_path = Path(configManager.bridgeConfig.configDir)
-        self.temp_dir = None
+        self.temp_dir: Path | None = None
+
+    def _require_temp_dir(self) -> Path:
+        """Return the active temporary directory or raise if not initialized."""
+        if self.temp_dir is None:
+            raise RuntimeError("Temporary directory is not initialized")
+        return self.temp_dir
         
     def install_updates(self, state: str, branch: str) -> bool:
         """
@@ -61,7 +67,8 @@ class GitHubInstaller:
             # Download server archive
             # server_url = f"https://github.com/diyhue/diyhue/archive/{branch}.zip"
             server_url = f"https://github.com/hendriksen-mark/diyhue/archive/{branch}.zip"
-            server_zip_path = self.temp_dir / "diyHue.zip"
+            temp_dir = self._require_temp_dir()
+            server_zip_path = temp_dir / "diyHue.zip"
             
             logging.info(f"Downloading diyHue update from {server_url}")
             if not self._download_file(server_url, server_zip_path):
@@ -71,7 +78,7 @@ class GitHubInstaller:
             bridgeConfig["config"]["swupdate2"]["state"] = "installing"
             
             # Extract archive
-            extract_dir = self.temp_dir / "diyHue_extract"
+            extract_dir = temp_dir / "diyHue_extract"
             if not self._extract_zip(server_zip_path, extract_dir):
                 logging.error(f"Failed to extract diyHue zip {server_zip_path} to {extract_dir}")
                 return False
@@ -142,7 +149,8 @@ class GitHubInstaller:
             # Download UI archive
             # ui_url = "https://github.com/diyhue/diyHueUI/releases/latest/download/DiyHueUI-release.zip"
             ui_url = "https://github.com/hendriksen-mark/diyHueUI/releases/latest/download/DiyHueUI-release.zip"
-            ui_zip_path = self.temp_dir / "diyHueUI.zip"
+            temp_dir = self._require_temp_dir()
+            ui_zip_path = temp_dir / "diyHueUI.zip"
 
             logging.info(f"Downloading UI update from {ui_url}")
             if not self._download_file(ui_url, ui_zip_path):
@@ -152,7 +160,7 @@ class GitHubInstaller:
             bridgeConfig["config"]["swupdate2"]["state"] = "installing"
             
             # Extract UI archive
-            ui_extract_dir = self.temp_dir / "diyHueUI"
+            ui_extract_dir = temp_dir / "diyHueUI"
             ui_extract_dir.mkdir(exist_ok=True)
             
             if not self._extract_zip(ui_zip_path, ui_extract_dir):
@@ -256,8 +264,9 @@ class GitHubInstaller:
         remove the running folder for fresh install, then restore backups.
         """
         try:
-            backup_dir = self.temp_dir / "hue-emulator_backup"
-            log_backup_dir = self.temp_dir / "log_backup"
+            temp_dir = self._require_temp_dir()
+            backup_dir = temp_dir / "hue-emulator_backup"
+            log_backup_dir = temp_dir / "log_backup"
 
             logging.info("Making backup of config and log files...")
 

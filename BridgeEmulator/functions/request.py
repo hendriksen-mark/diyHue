@@ -5,7 +5,7 @@ import logManager
 
 logging = logManager.logger.get_logger(__name__)
 
-def sendRequest(url: str, method: str, data: Optional[Union[dict, str]] = None, timeout: int = 3, delay: int = 0, retries: int = 3, retry_delay: int = 1) -> str:
+def sendRequest(url: str, method: str, data: Optional[Union[dict, str]] = None, timeout: int = 3, delay: int = 0, retries: int = 3, retry_delay: int = 1) -> Optional[str]:
     """
     Send an HTTP request with the specified method to the given URL.
 
@@ -37,10 +37,13 @@ def sendRequest(url: str, method: str, data: Optional[Union[dict, str]] = None, 
     
     for attempt in range(retries):
         try:
-            response: Optional[requests.Response] = None
+            response: requests.Response
             if method in {"POST", "PUT"}:
-                data = data.encode("utf8") if isinstance(data, str) else data
-                response = request_func(url, json=data if isinstance(data, dict) else data, timeout=timeout, headers=headers)
+                if isinstance(data, dict):
+                    response = request_func(url, json=data, timeout=timeout, headers=headers)
+                else:
+                    text_payload: Optional[str] = data if isinstance(data, str) else None
+                    response = request_func(url, data=text_payload, timeout=timeout, headers=headers)
             else:
                 response = request_func(url, timeout=timeout, headers=headers)
             response.raise_for_status()
@@ -52,4 +55,4 @@ def sendRequest(url: str, method: str, data: Optional[Union[dict, str]] = None, 
                 sleep(retry_delay)
             else:
                 logging.error(f"Request failed after {retries} attempts: {e}")
-                return
+                return ""

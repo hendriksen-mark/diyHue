@@ -13,6 +13,7 @@ from flask_restful import Api
 from werkzeug.security import check_password_hash
 import os
 import logging
+from typing import Any, cast
 import logManager
 import flask_login
 from flaskUI.core import User  # dummy import for flask_login module
@@ -61,25 +62,25 @@ def create_app(bridgeConfig) -> Flask:
     # Flask-Login setup
     login_manager: flask_login.LoginManager = flask_login.LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = "core.login"
+    cast(Any, login_manager).login_view = "core.login"
 
     @login_manager.user_loader
     def user_loader(email: str) -> User | None:
         if email not in bridgeConfig["config"]["users"]:
             return None
         user: User = User()
-        user.id = email
+        cast(Any, user).id = email
         return user
 
     @login_manager.request_loader
     def request_loader(request: Request) -> User | None:
-        email: str = request.form.get('email')
-        if email not in bridgeConfig["config"]["users"]:
+        email = request.form.get('email')
+        if email is None or email not in bridgeConfig["config"]["users"]:
             return None
         user: User = User()
-        user.id = email
+        cast(Any, user).id = email
         logger.info(f"Authentication attempt for user: {email}")
-        user.is_authenticated = check_password_hash(
+        cast(Any, user).is_authenticated = check_password_hash(
             request.form['password'],
             bridgeConfig["config"]["users"][email]["password"]
         )

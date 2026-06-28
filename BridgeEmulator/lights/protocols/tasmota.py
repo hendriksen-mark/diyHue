@@ -56,7 +56,7 @@ def discover(detectedLights: List[dict[str, Any]], device_ips: List[str]) -> Non
             #logging.debug(f"tasmota: probing ip {ip}")
             response = requests.get(f"http://{ip}/cm?cmnd=Status%200", timeout=3)
             response.raise_for_status()
-            if response.content and is_json(response.content):
+            if response.content and is_json(response.text):
                 device_data = response.json()
                 #logging.debug(pretty_json(device_data))
                 if "StatusSTS" in device_data:

@@ -1,7 +1,7 @@
 import json
 import threading
 import time
-from typing import Any, List
+from typing import Any, List, Optional
 
 from ws4py.client.threadedclient import WebSocketClient
 
@@ -33,7 +33,7 @@ class HomeAssistantClient(WebSocketClient):
         """Called when the WebSocket connection is opened."""
         logging.info("Home Assistant WebSocket Connection Opened")
 
-    def closed(self, code: int, reason: str = None) -> None:
+    def closed(self, code: int, reason: Optional[str] = None) -> None:
         """
         Called when the WebSocket connection is closed.
 
@@ -151,7 +151,7 @@ class HomeAssistantClient(WebSocketClient):
         color_from_hsv = False
         for key, value in data.items():
             if key == "ct":
-                service_data['color_temp'] = value
+                service_data['color_temp_kelvin'] = 1000000 / value
             if key == "bri":
                 service_data['brightness'] = value
             if key == "xy":
@@ -187,6 +187,15 @@ class HomeAssistantClient(WebSocketClient):
                         logging.info(f"Found {entity_id}")
                         latest_states[entity_id] = ha_state
                 discovery_result.set()
+
+    def do_pong(self, message: dict[str, Any]) -> None:
+        """
+        Handle pong messages from Home Assistant.
+
+        Args:
+            message (dict[str, Any]): The message.
+        """
+        logging.debug("Pong received from Home Assistant: {}".format(message))
 
     def do_event(self, message: dict[str, Any]) -> None:
         """
@@ -266,12 +275,12 @@ class HomeAssistantClient(WebSocketClient):
         self.send(json_payload)
 
 
-def connect_if_required() -> HomeAssistantClient:
+def connect_if_required() -> Optional[HomeAssistantClient]:
     """
     Connect to Home Assistant WebSocket if not already connected.
 
     Returns:
-        HomeAssistantClient: The WebSocket client.
+        Optional[HomeAssistantClient]: The WebSocket client, or None if connection failed.
     """
     if homeassistant_ws_client is None or homeassistant_ws_client.client_terminated:
         create_websocket_client()
@@ -334,8 +343,11 @@ def discover(detectedLights: List[dict[str, Any]]) -> None:
         detectedLights (List[dict[str, Any]]): The list to add discovered lights to.
     """
     logging.info("HomeAssistant WebSocket discovery called")
-    connect_if_required()
-    homeassistant_ws_client.get_all_lights()
+    client = connect_if_required()
+    if client is None:
+        logging.warning("HomeAssistant WebSocket discovery aborted: client not connected")
+        return
+    client.get_all_lights()
     logging.info("HomeAssistant WebSocket discovery waiting for devices")
     completed = discovery_result.wait(timeout=discovery_timeout_seconds)
     logging.info("HomeAssistant WebSocket discovery devices received, timeout? {}".format(

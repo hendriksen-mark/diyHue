@@ -1,15 +1,15 @@
 import logManager
 import subprocess
-from typing import Any
+from typing import Any, Optional
 
 logging = logManager.logger.get_logger(__name__)
 
-def _get_default_gateway() -> str:
+def _get_default_gateway() -> Optional[str]:
     """
     Get the default gateway IP address.
 
     Returns:
-        str: The default gateway IP address or None if not found.
+        Optional[str]: The default gateway IP address or None if not found.
     """
     result = subprocess.run(
         ["ip route | grep default | head -n 1 | cut -d ' ' -f 3"],

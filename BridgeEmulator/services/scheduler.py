@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, time, timezone
 from threading import Thread
 from time import sleep
-from typing import Tuple
+from typing import Tuple, Union, Any, cast
 
 import configManager
 import logManager
@@ -42,12 +42,12 @@ def execute_timer(schedule: str, obj: Schedule.Schedule, delay: int) -> None:
     logging.info(f"execute timer: {schedule} with delay {delay}")
     sendRequest(obj.command["address"], obj.command["method"], json.dumps(obj.command["body"]), 1, delay)
 
-def check_time_match(time_object: datetime) -> bool:
+def check_time_match(time_object: Union[datetime, time]) -> bool:
     """
     Check if the current time matches the given time object.
 
     Args:
-        time_object (datetime): The time object to match against the current time.
+        time_object (Union[datetime, time]): The time object to match against the current time.
 
     Returns:
         bool: True if the current time matches the time object, False otherwise.
@@ -65,10 +65,11 @@ def get_schedule_time(obj: Schedule.Schedule) -> Tuple[str, int]:
     Returns:
         Tuple[str, int]: The schedule time string and delay in seconds.
     """
-    if obj.localtime[-9:-8] == "A":
-        delay = random.randrange(0, int(obj.localtime[-8:-6]) * 3600 + int(obj.localtime[-5:-3]) * 60 + int(obj.localtime[-2:]))
-        return obj.localtime[:-9], delay
-    return obj.localtime, 0
+    localtime = obj.localtime or ""
+    if len(localtime) >= 9 and localtime[-9:-8] == "A":
+        delay = random.randrange(0, int(localtime[-8:-6]) * 3600 + int(localtime[-5:-3]) * 60 + int(localtime[-2:]))
+        return localtime[:-9], delay
+    return localtime, 0
 
 def process_schedule(schedule: str, obj: Schedule.Schedule) -> None:
     """
@@ -180,7 +181,9 @@ def process_smart_scene(smartscene: str, obj: SmartScene.SmartScene) -> None:
         sunset_slot = -1
         sensor_obj: Sensor.Sensor = bridgeConfig["sensors"]["1"]
         sunset = sensor_obj.config["sunset"] if "lat" in sensor_obj.protocol_cfg else "21:00:00"
-        slots = deepcopy(obj.timeslots)
+        raw_timeslots = deepcopy(obj.timeslots)
+        timeslots: list[dict[str, Any]] = list(raw_timeslots.values()) if isinstance(raw_timeslots, dict) else raw_timeslots
+        slots: list[dict[str, Any]] = deepcopy(timeslots)
         if hasattr(obj, "recurrence"):
             if datetime.now().strftime("%A").lower() not in obj.recurrence:
                 return
@@ -211,41 +214,51 @@ def process_smart_scene(smartscene: str, obj: SmartScene.SmartScene) -> None:
         if obj.active_timeslot != active_timeslot:
             obj.active_timeslot = active_timeslot
             if obj.state == "active":
-                if active_timeslot == len(obj.timeslots) - 1:
+                if active_timeslot == len(timeslots) - 1:
                     logging.info(f"stop smart_scene: {obj.name}")
-                    group: Group.Group = findGroup(obj.group["rid"])
-                    group.setV1Action(state={"on": False})
+                    group_rid = obj.group.get("rid") if isinstance(obj.group, dict) else None
+                    if group_rid is None:
+                        logging.warning(f"Unable to stop smart_scene {obj.name}: missing group rid")
+                    else:
+                        group_obj = findGroup(group_rid)
+                        if isinstance(group_obj, Group.Group):
+                            group_obj.setV1Action(state={"on": False})
+                        else:
+                            logging.warning(f"Unable to stop smart_scene {obj.name}: group {group_rid} not found")
                 else:
                     logging.info(f"execute smart_scene: {obj.name} scene: {obj.active_timeslot}")
                     putDict = {"recall": {"action": "active", "duration": obj.speed}, "controlled_service": "smart_scene"}
-                    target_object: Scene.Scene = getObject(obj.timeslots[active_timeslot]["target"]["rtype"], obj.timeslots[active_timeslot]["target"]["rid"])
-                    target_object.activate(putDict)
+                    target_object = getObject(timeslots[active_timeslot]["target"]["rtype"], timeslots[active_timeslot]["target"]["rid"])
+                    if isinstance(target_object, Scene.Scene):
+                        target_object.activate(putDict)
+                    else:
+                        logging.warning(f"Unable to activate smart_scene {obj.name}: target object is not a Scene")
 
 def runScheduler() -> None:
     """
     Run the scheduler to process schedules, behavior instances, and smart scenes.
     """
     while True:
-        for schedule, obj in bridgeConfig["schedules"].items():
-            obj: Schedule.Schedule = obj
+        for schedule, schedule_obj in bridgeConfig["schedules"].items():
+            schedule_obj = cast(Schedule.Schedule, schedule_obj)
             try:
-                process_schedule(schedule, obj)
+                process_schedule(schedule, schedule_obj)
             except Exception as e:
                 logging.info(f"Exception while processing the schedule {schedule} | {e}")
 
-        for instance, obj in bridgeConfig["behavior_instance"].items():
-            obj: BehaviorInstance.BehaviorInstance = obj
+        for instance, behavior_obj in bridgeConfig["behavior_instance"].items():
+            behavior_obj = cast(BehaviorInstance.BehaviorInstance, behavior_obj)
             try:
-                process_behavior_instance(instance, obj)
+                process_behavior_instance(instance, behavior_obj)
             except Exception as e:
-                logging.info(f"Exception while processing the behavior_instance {obj.name} | {e}")
+                logging.info(f"Exception while processing the behavior_instance {behavior_obj.name} | {e}")
 
-        for smartscene, obj in bridgeConfig["smart_scene"].items():
-            obj: SmartScene.SmartScene = obj
+        for smartscene, smartscene_obj in bridgeConfig["smart_scene"].items():
+            smartscene_obj = cast(SmartScene.SmartScene, smartscene_obj)
             try:
-                process_smart_scene(smartscene, obj)
+                process_smart_scene(smartscene, smartscene_obj)
             except Exception as e:
-                logging.info(f"Exception while processing the smart_scene {obj.name} | {e}")
+                logging.info(f"Exception while processing the smart_scene {smartscene_obj.name} | {e}")
 
         if "updatetime" not in bridgeConfig["config"]["swupdate2"]["autoinstall"]:
             bridgeConfig["config"]["swupdate2"]["autoinstall"]["updatetime"] = "T14:00:00"

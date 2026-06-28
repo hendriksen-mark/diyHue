@@ -50,7 +50,7 @@ def gen_cert_python(mac_address: str, config_path: str = "/opt/hue-emulator/conf
                 '-nodes', '-x509', '-newkey', 'ec',
                 '-pkeyopt', 'ec_paramgen_curve:P-256',
                 '-pkeyopt', 'ec_param_enc:named_curve',
-                '-subj', f'/C=NL/O=Philips Hue/CN={mac_clean}',
+                '-subj', f'/C=NL/O=Signify Hue/CN={mac_clean}',
                 '-keyout', private_key_path,
                 '-out', public_cert_path,
                 '-set_serial', str(dec_serial)

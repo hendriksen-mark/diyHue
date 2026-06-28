@@ -7,18 +7,17 @@ from threading import Thread
 from functions.scripts import triggerScript
 import logManager
 import configManager
-from typing import Any
 from HueObjects import Sensor, BehaviorInstance
 
 bridgeConfig = configManager.bridgeConfig.yaml_config
 logging = logManager.logger.get_logger(__name__)
 
-def runBackgroundSleep(instance: dict[str, Any], seconds: float) -> None:
+def runBackgroundSleep(instance: BehaviorInstance.BehaviorInstance, seconds: float) -> None:
     """
     Run a background sleep for a specified number of seconds and then trigger a script.
 
     Args:
-        instance (dict[str, Any]): The instance configuration.
+        instance (BehaviorInstance.BehaviorInstance): The behavior instance configuration.
         seconds (float): The number of seconds to sleep.
     """
     sleep(seconds)

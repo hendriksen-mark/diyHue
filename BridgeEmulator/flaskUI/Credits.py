@@ -2,7 +2,7 @@ from flask_restful import Resource
 from typing import Union, List, Any, Tuple
 
 class Credits(Resource):
-    def get(self, resource: str) -> Union[List[dict[str, Any]], Tuple[str, int]]:
+    def get(self, resource: str) -> Union[List[dict[str, Any]], Tuple[str, int], str]:
         """
         Handle GET requests for various resources.
 

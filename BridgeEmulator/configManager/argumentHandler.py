@@ -9,7 +9,7 @@ from services.genCert import gen_cert_python
 
 logging = logManager.logger.get_logger(__name__)
 
-def get_environment_variable(var: str, boolean: bool = False) -> Union[str, bool]:
+def get_environment_variable(var: str, boolean: bool = False) -> Union[str, bool, None]:
     """
     Retrieve the value of an environment variable.
 
@@ -18,7 +18,7 @@ def get_environment_variable(var: str, boolean: bool = False) -> Union[str, bool
         boolean (bool): If True, interpret the value as a boolean.
 
     Returns:
-        str or bool: The value of the environment variable, or False if boolean is True and the value is not "true".
+        str, bool, or None: The value of the environment variable, or False if boolean is True and the value is not "true", or None if the variable is not set.
     """
     value = getenv(var)
     if boolean and value:
@@ -55,7 +55,10 @@ def process_arguments(config, args: dict[str, Union[str, bool]]) -> None:
     logging.info(f"Debug logging {'enabled' if args['DEBUG'] else 'disabled'}!")
 
     if not path.isfile(path.join(config.configDir, "cert.pem")):
-        generate_certificate(args["MAC"], config.configDir, config.runningDir)
+        mac_value = args.get("MAC")
+        if not isinstance(mac_value, str):
+            raise TypeError("MAC must be a string")
+        generate_certificate(mac_value, config.configDir, config.runningDir)
 
 def parse_arguments() -> dict[str, Union[str, int, bool]]:
     """
@@ -87,10 +90,19 @@ def parse_arguments() -> dict[str, Union[str, int, bool]]:
 
     argumentDict["noLinkButton"] = args.no_link_button
     argumentDict["noServeHttps"] = args.no_serve_https
-    argumentDict["DEBUG"] = args.debug or get_environment_variable('DEBUG', True)
+    argumentDict["DEBUG"] = args.debug or (get_environment_variable('DEBUG', True) is True)
     argumentDict["CONFIG_PATH"] = args.config_path or get_environment_variable('CONFIG_PATH') or '/opt/hue-emulator/config'
-    argumentDict["BIND_IP"] = args.bind_ip or get_environment_variable('BIND_IP') or '0.0.0.0'
-    argumentDict["HOST_IP"] = args.ip or get_environment_variable('IP') or argumentDict["BIND_IP"] if argumentDict["BIND_IP"] != '0.0.0.0' else getIpAddress()
+
+    bind_ip_env = get_environment_variable('BIND_IP')
+    bind_ip = args.bind_ip or (bind_ip_env if isinstance(bind_ip_env, str) else None) or '0.0.0.0'
+    argumentDict["BIND_IP"] = bind_ip
+
+    ip_env = get_environment_variable('IP')
+    detected_ip = getIpAddress()
+    fallback_ip: str = detected_ip if isinstance(detected_ip, str) and detected_ip else '127.0.0.1'
+    host_ip: str = args.ip or (ip_env if isinstance(ip_env, str) else '') or (bind_ip if bind_ip != '0.0.0.0' else fallback_ip)
+    argumentDict["HOST_IP"] = host_ip
+
     argumentDict["HTTP_PORT"] = args.http_port or get_environment_variable('HTTP_PORT') or 80
     argumentDict["HTTPS_PORT"] = args.https_port or get_environment_variable('HTTPS_PORT') or 443
     argumentDict["RUNNING_PATH"] = str(pathlib.Path(__file__).parent.parent)
@@ -99,11 +111,12 @@ def parse_arguments() -> dict[str, Union[str, int, bool]]:
     logging.info("Using Host %s:%s" % (argumentDict["HOST_IP"], argumentDict["HTTP_PORT"]))
     logging.info("Using Host %s:%s" % (argumentDict["HOST_IP"], argumentDict["HTTPS_PORT"]))
 
+    mac_env = get_environment_variable('MAC')
     if args.mac and str(args.mac).replace(":", "").capitalize() != "XXXXXXXXXXXX":
         dockerMAC: str = args.mac  # keeps : for cert generation
         mac: str = str(args.mac).replace(":", "")
-    elif get_environment_variable('MAC') and get_environment_variable('MAC').strip('\u200e').replace(":", "").capitalize() != "XXXXXXXXXXXX":
-        dockerMAC: str = get_environment_variable('MAC').strip('\u200e')
+    elif isinstance(mac_env, str) and mac_env.strip('\u200e').replace(":", "").capitalize() != "XXXXXXXXXXXX":
+        dockerMAC: str = mac_env.strip('\u200e')
         mac: str = str(dockerMAC).replace(":", "")
     else:
         dockerMAC: str = check_output("cat /sys/class/net/$(ip -o addr | grep %s | awk '{print $2}')/address" % argumentDict["HOST_IP"],
@@ -112,7 +125,7 @@ def parse_arguments() -> dict[str, Union[str, int, bool]]:
 
     argumentDict["FULLMAC"] = dockerMAC
     argumentDict["MAC"] = mac
-    argumentDict["DOCKER"] = args.docker or get_environment_variable('DOCKER', True)
+    argumentDict["DOCKER"] = args.docker or (get_environment_variable('DOCKER', True) is True)
 
     if mac.capitalize() == "XXXXXXXXXXXX" or not mac:
         logging.exception(f"No valid MAC address provided {mac}")

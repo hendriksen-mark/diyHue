@@ -10,7 +10,7 @@ from HueObjects import Light, ApiUser
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-def syncWithLights(off_if_unreachable: bool) -> None:
+def syncWithLights(off_if_unreachable: bool = False, run_once: bool = False) -> None:
     """
     Synchronize the state of the lights with their actual state.
 
@@ -38,6 +38,8 @@ def syncWithLights(off_if_unreachable: bool) -> None:
                             light.state["on"] = False
                         logging.warning(f"{light.name} is unreachable: {e}")
                     break
+        if run_once:
+            break
 
         sleep(10)  # wait at least 10 seconds before next sync
         i = 0

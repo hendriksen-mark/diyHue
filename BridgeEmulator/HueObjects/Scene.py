@@ -11,7 +11,7 @@ logging = logManager.logger.get_logger(__name__)
 class Scene:
     DEFAULT_SPEED = 0.6269841194152832
 
-    def __init__(self, data: dict[str, Union[str, dict, List, bool, float]]):
+    def __init__(self, data: dict[str, Any]):
         self.name: str = data.get("name", "")
         self.id_v1: str = data.get("id_v1", "")
         self.id_v2: str = data.get("id_v2", genV2Uuid())
@@ -28,9 +28,11 @@ class Scene:
         self.group: Optional[weakref.ref] = data.get("group", None)
         self.lights: List[weakref.ref] = data.get("lights", [])
         self.status: str = data.get("status", "inactive")
-        if "group" in data:
+        group_ref = self.group
+        group_obj = group_ref() if group_ref is not None else None
+        if "group" in data and group_obj is not None:
             self.storelightstate()
-            self.lights = self.group().lights
+            self.lights = group_obj.lights
         self._send_stream_event(self.getV2Api(), "add")
 
     def __del__(self):
@@ -50,6 +52,9 @@ class Scene:
     def add_light(self, light: weakref.ref) -> None:
         self.lights.append(light)
 
+    def _get_group(self) -> Optional[Group.Group]:
+        return self.group() if self.group is not None else None
+
     def activate(self, data: dict[str, Any]) -> None:
         if "recall" in data:
             action = data["recall"]["action"]
@@ -63,12 +68,12 @@ class Scene:
 
     def _activate_dynamic_palette(self, data: dict[str, Any]) -> None:
         self.status = data["recall"]["action"]
-        for lightIndex, light in enumerate(self.lights):
-            if light():
-                light: Light.Light = light()
-                light.dynamics["speed"] = self.speed
-                light.controlled_service = data.get("controlled_service", {"rid": self.id_v2, "rtype": "scene"})
-                Thread(target=light.dynamicScenePlay, args=[self.palette, lightIndex]).start()
+        for lightIndex, light_ref in enumerate(self.lights):
+            light_obj = light_ref()
+            if light_obj is not None:
+                light_obj.dynamics["speed"] = self.speed
+                light_obj.controlled_service = data.get("controlled_service", {"rid": self.id_v2, "rtype": "scene"})
+                Thread(target=light_obj.dynamicScenePlay, args=[self.palette, lightIndex]).start()
 
     def _activate_static_scene(self, data: dict[str, Any]) -> None:
         queueState = {}
@@ -92,7 +97,9 @@ class Scene:
         self._apply_queued_state(queueState)
 
         if self.type == "GroupScene":
-            self.group().state["any_on"] = True
+            group = self._get_group()
+            if group is not None:
+                group.state["any_on"] = True
 
     def _update_transition_time(self, state: dict[str, Any], data: dict[str, Any]) -> None:
         transitiontime = data.get("seconds", 0) * 10 + data.get("minutes", 0) * 600
@@ -121,7 +128,7 @@ class Scene:
             "type": self.type,
             "lights": [],
             "lightstates": {},
-            "owner": self.owner.username,
+            "owner": self.owner.username if self.owner is not None else "",
             "recycle": self.recycle,
             "locked": True,
             "appdata": self.appdata,
@@ -129,10 +136,12 @@ class Scene:
             "lastupdated": self.lastupdated
         }
         if self.type == "LightScene":
-            result["lights"] = [light().id_v1 for light in self.lights if light()]
+            result["lights"] = [light_obj.id_v1 for light in self.lights if (light_obj := light()) is not None]
         elif self.type == "GroupScene":
-            result["group"] = self.group().id_v1
-            result["lights"] = [light().id_v1 for light in self.group().lights if light()]
+            group = self._get_group()
+            if group is not None:
+                result["group"] = group.id_v1
+                result["lights"] = [light_obj.id_v1 for light in group.lights if (light_obj := light()) is not None]
 
         result["lightstates"] = {light.id_v1: state for light, state in self.lightstates.items() if light.id_v1 in result["lights"] and "gradient" not in state}
         if self.image is not None:
@@ -140,7 +149,7 @@ class Scene:
         return result
 
     def getV2Api(self) -> dict[str, Any]:
-        result = {"actions": []}
+        result: dict[str, Any] = {"actions": []}
         lightstates = list(self.lightstates.items())
 
         for light, state in lightstates:
@@ -162,14 +171,16 @@ class Scene:
                 "target": {"rid": light.id_v2, "rtype": "light"}
             })
 
-        if self.type == "GroupScene" and self.group():
+        group = self._get_group()
+        if self.type == "GroupScene" and group is not None:
             result["group"] = {
-                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.group().id_v2 + self.group().type.lower())),
-                "rtype": self.group().type.lower()
+                "rid": str(uuid.uuid5(uuid.NAMESPACE_URL, group.id_v2 + group.type.lower())),
+                "rtype": group.type.lower()
             }
-        result["metadata"] = {"name": self.name}
+        metadata: dict[str, Any] = {"name": self.name}
         if self.image is not None:
-            result["metadata"]["image"] = {"rid": self.image, "rtype": "public_image"}
+            metadata["image"] = {"rid": self.image, "rtype": "public_image"}
+        result["metadata"] = metadata
         result.update({
             "id": self.id_v2,
             "id_v1": f"/scenes/{self.id_v1}",
@@ -183,22 +194,23 @@ class Scene:
         return result
 
     def storelightstate(self) -> None:
-        lights = self.group().lights if self.type == "GroupScene" else self.lightstates.keys()
-        for light in lights:
-            if light():
-                light: Light.Light = light()
-                state = {"on": light.state["on"]}
-                colormode = light.state.get("colormode")
+        group = self._get_group()
+        lights = group.lights if self.type == "GroupScene" and group is not None else self.lightstates.keys()
+        for light_ref in lights:
+            light_obj: Optional[Light.Light] = light_ref()
+            if light_obj is not None:
+                state = {"on": light_obj.state["on"]}
+                colormode = light_obj.state.get("colormode")
                 if colormode == "xy":
-                    state["xy"] = light.state["xy"]
+                    state["xy"] = light_obj.state["xy"]
                 elif colormode == "ct":
-                    state["ct"] = light.state["ct"]
+                    state["ct"] = light_obj.state["ct"]
                 elif colormode == "hs":
-                    state["hue"] = light.state["hue"]
-                    state["sat"] = light.state["sat"]
-                if "bri" in light.state:
-                    state["bri"] = light.state["bri"]
-                self.lightstates[light] = state
+                    state["hue"] = light_obj.state["hue"]
+                    state["sat"] = light_obj.state["sat"]
+                if "bri" in light_obj.state:
+                    state["bri"] = light_obj.state["bri"]
+                self.lightstates[light_obj] = state
 
     def update_attr(self, newdata: dict[str, Any]) -> None:
         self.lastupdated = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
@@ -221,7 +233,7 @@ class Scene:
             "id_v2": self.id_v2,
             "name": self.name,
             "appdata": self.appdata,
-            "owner": self.owner.username,
+            "owner": self.owner.username if self.owner is not None else "",
             "type": self.type,
             "picture": self.picture,
             "image": self.image,
@@ -231,14 +243,14 @@ class Scene:
             "lightstates": {}
         }
         if self.type == "GroupScene":
-            if self.group():
-                group: Group.Group = self.group()
+            group = self._get_group()
+            if group is not None:
                 result["group"] = group.id_v1
             else:
                 return False
         if self.palette is not None:
             result["palette"] = self.palette
         result["speed"] = self.speed or self.DEFAULT_SPEED
-        result["lights"] = [light().id_v1 for light in self.lights if light()]
+        result["lights"] = [light_obj.id_v1 for light in self.lights if (light_obj := light()) is not None]
         result["lightstates"] = {light.id_v1: state for light, state in self.lightstates.items()}
         return result

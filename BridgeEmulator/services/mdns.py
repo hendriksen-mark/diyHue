@@ -99,10 +99,12 @@ class MDNSListener:
         Args:
             new_props: Dictionary of new properties to update
         """
-        if self.info:
+        if self.info and self.zeroconf:
             self.info.properties.update(new_props)
             self.zeroconf.update_service(self.info)
             logging.info('<MDNS> service properties updated')
+        else:
+            logging.warning('<MDNS> cannot update properties: service is not registered')
 
     def stop_listener(self) -> None:
         """
@@ -133,24 +135,6 @@ class MDNSListener:
         logging.info('<MDNS> initiating graceful shutdown')
         self.stop_listener()
         self.stop()
-
-    def discover_services(self, service_type: str) -> List[str]:
-        """
-        Discover available mDNS services of a given type.
-        
-        Args:
-            service_type: The type of service to discover
-        
-        Returns:
-            List of discovered service names
-        """
-        logging.info(f'<MDNS> discovering services of type: {service_type}')
-        services = self.zeroconf.get_service_info(service_type)
-        if services:
-            return [service.name for service in services]
-        else:
-            logging.info(f'<MDNS> no services found for type: {service_type}')
-            return []
 
 def mdnsListener(ip: str, port: int, modelid: str, bridgeid: str, mac: str) -> None:
     """

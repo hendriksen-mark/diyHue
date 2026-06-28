@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from threading import Thread
 from time import sleep
 from functions.behavior_instance import checkBehaviorInstances
-from typing import Union
 from HueObjects import Sensor
 
 logging = logManager.logger.get_logger(__name__)
@@ -16,7 +15,7 @@ logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
 
-def noMotion(sensor: str) -> None:
+def noMotion(sensor_id: str) -> None:
     """
     Monitor the sensor for no motion and update its state after 60 seconds of inactivity.
 
@@ -26,7 +25,7 @@ def noMotion(sensor: str) -> None:
     Returns:
         None
     """
-    sensor: Sensor.Sensor = bridgeConfig["sensors"][sensor]
+    sensor: Sensor.Sensor = bridgeConfig["sensors"][sensor_id]
     sensor.protocol_cfg["threaded"] = True
     logging.info("Monitor the sensor for no motion")
 
@@ -40,7 +39,7 @@ def noMotion(sensor: str) -> None:
 
 
 class Switch(Resource):
-    def get(self) -> dict[str, Union[str, dict[str, str]]]:
+    def get(self) -> dict[str, str]:
         """
         Handle GET requests to register or update devices based on the provided arguments.
 
@@ -65,7 +64,7 @@ class Switch(Resource):
         else:
             return self.update_device(args, mac, current_time)
 
-    def post(self) -> dict[str, Union[str, dict[str, str]]]:
+    def post(self) -> dict[str, str]:
         """
         Handle POST requests with JSON body to register or update devices.
         More efficient than GET with query parameters.
@@ -123,6 +122,7 @@ class Switch(Resource):
         Returns:
             dict[str, str]: The result of the registration operation.
         """
+        sensor: Sensor.Sensor | None
         device_type = args["devicetype"]
         if device_type in ["ZLLSwitch", "ZGPSwitch"]:
             sensor = addHueSwitch("", device_type)
@@ -132,6 +132,9 @@ class Switch(Resource):
             sensor = addHueRotarySwitch({"mac": mac})
         else:
             return {"fail": "unknown device"}
+
+        if sensor is None:
+            return {"fail": "device registration failed"}
 
         sensor.protocol_cfg["mac"] = mac
         return {"success": "device registered"}
@@ -151,11 +154,12 @@ class Switch(Resource):
         for device, obj in bridgeConfig["sensors"].items():
             obj: Sensor.Sensor = obj
             if obj.protocol_cfg.get("mac") == mac:
-                self.apply_device_updates(args, obj, current_time)
-                return {"success": "command applied"}
+                if self.apply_device_updates(args, obj, current_time):
+                    return {"success": "command applied"}
+                return {"fail": "unknown device"}
         return {"fail": "device not found"}
 
-    def apply_device_updates(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
+    def apply_device_updates(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> bool:
         """
         Apply updates to the device based on its type and the provided arguments.
 
@@ -165,7 +169,7 @@ class Switch(Resource):
             current_time (datetime): The current time.
 
         Returns:
-            None
+            bool: True if an update method exists for the device type, otherwise False.
         """
         update_methods = {
             "ZLLLightLevel": self.update_light_level,
@@ -183,8 +187,9 @@ class Switch(Resource):
             obj.state["lastupdated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
             rulesProcessor(obj, current_time)
             checkBehaviorInstances(obj)
+            return True
         else:
-            return {"fail": "unknown device"}
+            return False
 
     def update_light_level(self, args: dict[str, str], obj: Sensor.Sensor, current_time: datetime) -> None:
         """

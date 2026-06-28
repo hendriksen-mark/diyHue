@@ -21,7 +21,7 @@ class LogWebSocketHandler(WebSocket):
         self._thread.daemon = True
         self._thread.start()
 
-    def closed(self, code: int, reason: str = None) -> None:
+    def closed(self, code: int, reason: str | None = None) -> None:
         self._running = False
 
     def tail_log(self) -> None:

@@ -26,6 +26,7 @@ class Light:
         self.effect: str = "no_effect"
         self.function: str = data.get("function", "mixed")
         self.controlled_service: str = data.get("controlled_service", "manual")
+        self.previous_controlled_service: Optional[str] = None
 
         self._initialize_stream_events()
 
@@ -108,6 +109,10 @@ class Light:
                 if "max_bri" in self.protocol_cfg and self.protocol_cfg["max_bri"] < state["bri"]:
                     state["bri"] = self.protocol_cfg["max_bri"]
 
+        if "controlled_service" in state:
+            self.update_controlled_service(state["controlled_service"])
+            del state["controlled_service"]
+
         if self.protocol not in ["dummy"]:
             for protocol in protocols:
                 if "lights.protocols." + self.protocol == protocol.__name__:
@@ -142,13 +147,28 @@ class Light:
             if "function" in state["metadata"]:
                 v1State["function"] = state["metadata"]["function"]
         if "controlled_service" in state:
-            self.controlled_service = state["controlled_service"]
+            self.update_controlled_service(state["controlled_service"])
             del state["controlled_service"]
         self.setV1State(v1State, advertise=False)
         self.genStreamEvent(state)
 
+    def update_controlled_service(self, new_service: str) -> None:
+        if self.controlled_service != new_service:
+            self.previous_controlled_service = self.controlled_service
+            self.controlled_service = new_service
+            logging.info(f"Controlled service changed from {self.previous_controlled_service} to {self.controlled_service}")
+            self.stop_previous_service()
+
+    def stop_previous_service(self) -> None:
+        if self.previous_controlled_service:
+            logging.info(f"Stopping previous service: {self.previous_controlled_service}")
+            # Add logic to stop the previous service
+            # Example: if self.previous_controlled_service == "some_service":
+            #              stop_some_service()
+            self.previous_controlled_service = None
+
     def genStreamEvent(self, v2State: dict[str, Any]) -> None:
-        streamMessage = {
+        streamMessage: dict[str, Any] = {
             "data": [{"id": self.id_v2, "id_v1": f"/lights/{self.id_v1}", "type": "light"}],
         }
         streamMessage["data"][0].update(v2State)

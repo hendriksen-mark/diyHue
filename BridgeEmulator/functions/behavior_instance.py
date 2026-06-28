@@ -11,7 +11,7 @@ from HueObjects import Group, Light, Scene
 logging = logManager.logger.get_logger(__name__)
 bridgeConfig = configManager.bridgeConfig.yaml_config
 
-def findTriggerTime(times: List[dict[str, Any]]) -> List[dict[str, Any]]:
+def findTriggerTime(times: List[dict[str, Any]]) -> Any:
     """
     Find the trigger time based on the current time.
 
@@ -19,7 +19,7 @@ def findTriggerTime(times: List[dict[str, Any]]) -> List[dict[str, Any]]:
         times (List[dict[str, Any]]): List of time intervals with actions.
 
     Returns:
-        List[dict[str, Any]]: Actions corresponding to the current time interval.
+        Any: Actions corresponding to the current time interval.
     """
     now = datetime.now()
     for i in range(len(times) - 1):
@@ -295,7 +295,7 @@ def handleMotionSensor(instance: Any, device: Any, lightsAndGroups: List[Any]) -
             {"hour": slot["start_time"]["time"]["hour"], "minute": slot["start_time"]["time"]["minute"], "actions": {"on_motion": slot["on_motion"], "on_no_motion": slot["on_no_motion"]}}
             for slot in instance.configuration["when"]["timeslots"]
         ]
-        actions = findTriggerTime(allSlots)
+        actions: dict[str, Any] = findTriggerTime(allSlots)
         if motion:
             if not any_on: # motion triggered and lights are off
                 logging.info(f"Trigger motion routine {instance.name}")

@@ -25,12 +25,12 @@ def set_light(light, data: dict[str, Any], rgb: Optional[tuple[int, int, int]] =
 	if colormode == "xy":
 		xy = light.state["xy"]
 		if rgb:
-			r, g, b = rgbBrightness(rgb, light.state["bri"])
+			r, g, b = rgbBrightness(list(rgb), light.state["bri"])
 		else:
 			r, g, b = convert_xy(xy[0], xy[1], light.state["bri"])
 		(hue, saturation, value) = colorsys.rgb_to_hsv(r,g,b)
-		sendHueCmd(light, hue*255)
-		sendSaturationCmd(light, (1-saturation)*100)
+		sendHueCmd(light, int(hue*255))
+		sendSaturationCmd(light, int((1-saturation)*100))
 	elif colormode == "ct":
 		ct = light.state["ct"]
 		ct01 = (ct - 153) / (500 - 153) #map color temperature from 153-500 to 0-1
@@ -88,7 +88,7 @@ def sendCmd(light, cmd: bytes, tries: int = 3) -> None:
 
 	if sessionId1 == 0 and sessionId2 == 0:
 		if not getSessionId(light):
-			return False
+			return
 
 	msg = b'\x80\x00\x00\x00\x11'
 	msg += bytes([sessionId1, sessionId2])
@@ -117,8 +117,11 @@ def sendCmd(light, cmd: bytes, tries: int = 3) -> None:
 	sendMsg(light, msg)
 	logging.info("wait for receiving after sending command")
 	data = None
+	current_sock = sock
+	if current_sock is None:
+		raise Exception("socket connection is not available")
 	try:
-		data, recvAddr = sock.recvfrom(1024)
+		data, recvAddr = current_sock.recvfrom(1024)
 	except socket.timeout:
 		logging.info("socket timed out")
 	receiveConfirmed = False
@@ -141,10 +144,13 @@ def getSessionId(light) -> bool:
 	global sessionId1, sessionId2
 	sendMsg(light, b'\x20\x00\x00\x00\x16\x02\x62\x3A\xD5\xED\xA3\x01\xAE\x08\x2D\x46\x61\x41\xA7\xF6\xDC\xAF\xD3\xE6\x00\x00\x1E')
 	totalTries = 0
+	current_sock = sock
+	if current_sock is None:
+		return False
 	while totalTries < 3:
 		totalTries+=1
 		logging.info("wait for receiving session id")
-		data, light = sock.recvfrom(1024)
+		data, recvAddr = current_sock.recvfrom(1024)
 		if len(data) == 22:
 			data = bytes(data)
 			sessionId1 = data[19]

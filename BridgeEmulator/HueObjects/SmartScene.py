@@ -1,7 +1,7 @@
 import uuid
 import logManager
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from HueObjects import genV2Uuid, StreamEvent, Group
 
 logging = logManager.logger.get_logger(__name__)
@@ -53,13 +53,23 @@ class SmartScene:
         self.state = "active"
         if datetime.now().strftime("%A").lower() in self.recurrence:
             from flaskUI.v2restapi import getObject
-            target_object = getObject(self.timeslots[self.active_timeslot]["target"]["rtype"], self.timeslots[self.active_timeslot]["target"]["rid"])
+            target_object = getObject(self.timeslots[str(self.active_timeslot)]["target"]["rtype"], self.timeslots[str(self.active_timeslot)]["target"]["rid"])
+            if target_object is False:
+                logging.warning(f"activate smart_scene: target object not found for {self.name}")
+                return
             putDict = {"recall": {"action": "active", "duration": self.speed}}
-            target_object.activate(putDict)
+            cast(Any, target_object).activate(putDict)
 
     def _deactivate_scene(self) -> None:
         from functions.scripts import findGroup
-        group: Group.Group = findGroup(self.group["rid"])
+        if self.group is None:
+            logging.warning(f"deactivate smart_scene: no group set for {self.name}")
+            return
+        result = findGroup(self.group["rid"])
+        if result is False:
+            logging.warning(f"deactivate smart_scene: group not found for {self.name}")
+            return
+        group: Group.Group = cast(Group.Group, result)
         group.setV1Action(state={"on": False})
         logging.debug(f"deactivate smart_scene: {self.name}")
         self.state = "inactive"
