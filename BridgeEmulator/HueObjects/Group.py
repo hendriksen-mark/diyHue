@@ -3,7 +3,7 @@ import logManager
 import weakref
 from datetime import datetime, timezone
 from typing import Any, List, Optional, Union
-from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, StreamEvent, Light, ApiUser
+from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, StreamEvent, update_state, Light
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -12,7 +12,6 @@ class Group:
         self.name: str = data.get("name", f"Group {data['id_v1']}")
         self.id_v1: str = data["id_v1"]
         self.id_v2: str = data.get("id_v2", genV2Uuid())
-        self.owner: Optional[ApiUser.ApiUser] = data.get("owner")
         self.icon_class: str = data.get("class", data.get("icon_class", "Other"))
         self.lights: List[weakref.ReferenceType[Light.Light]] = []
         self.action: dict[str, Union[bool, int, str, List[float]]] = {
@@ -93,34 +92,6 @@ class Group:
                 setattr(self, key, value)
         self._send_stream_event(self._get_v2_group(), "update")
 
-    def update_state(self) -> dict[str, Union[bool, int]]:
-        """
-        Updates and returns the group's state.
-
-        Returns:
-            dict[str, Union[bool, int]]: Dictionary containing the updated state.
-        """
-        all_on = True
-        any_on = False
-        bri = 0
-        lights_on = 0
-        if not self.lights:
-            all_on = False
-        for light_ref in self.lights:
-            light_instance = light_ref()
-            if light_instance is None:
-                continue
-            if light_instance.state["on"]:
-                any_on = True
-                if "bri" in light_instance.state:
-                    bri += light_instance.state["bri"]
-                    lights_on += 1
-            else:
-                all_on = False
-        if any_on:
-            bri = (((bri / lights_on) / 254) * 100) if bri > 0 else 0
-        return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
-
     def setV2Action(self, state: dict[str, Any]) -> None:
         """
         Sets the V2 action for the group and generates a stream event.
@@ -168,7 +139,7 @@ class Group:
         self._send_stream_event(streamMessage["data"], "update")
 
         if "on" in v2State:
-            v2State["dimming"] = {"brightness": self.update_state()["avr_bri"]}
+            v2State["dimming"] = {"brightness": update_state(self)["avr_bri"]}
         streamMessage = {
             "data": [{
                 "id": self.id_v2,
@@ -217,12 +188,10 @@ class Group:
             dict[str, Any]: The V1 API representation of the group.
         """
         result: dict[str, Any] = {"name": self.name}
-        if hasattr(self, "owner") and self.owner is not None:
-            result["owner"] = self.owner.username
         result["lights"] = [light_instance.id_v1 for light_ref in self.lights if (light_instance := light_ref()) is not None]
         result["sensors"] = [sensor_instance.id_v1 for sensor_ref in self.sensors if (sensor_instance := sensor_ref()) is not None]
         result["type"] = self.type.capitalize()
-        result["state"] = self.update_state()
+        result["state"] = update_state(self)
         result["recycle"] = False
         if self.id_v1 == "0":
             result["presence"] = {"state": {"presence": None, "presence_all": None, "lastupdated": "none"}}
@@ -297,22 +266,16 @@ class Group:
         result = {
             "alert": {"action_values": ["breathe"]},
             "color": {},
-            "dimming": {"brightness": self.update_state()["avr_bri"]},
+            "dimming": {"brightness": update_state(self)["avr_bri"]},
             "dimming_delta": {},
             "dynamics": {},
             "id": self.id_v2,
             "id_v1": f"/groups/{self.id_v1}",
-            "on": {"on": self.update_state()["any_on"]},
+            "on": {"on": update_state(self)["any_on"]},
             "type": "grouped_light",
             "signaling": {"signal_values": ["no_signal", "on_off"]}
         }
-        if hasattr(self, "owner") and self.owner is not None:
-            apiuser = self.owner.username
-            if len(apiuser) == 32:
-                apiuser = f"{apiuser[:8]}-{apiuser[8:12]}-{apiuser[12:16]}-{apiuser[16:20]}-{apiuser[20:]}"
-            result["owner"] = {"rid": apiuser, "rtype": "device"}
-        else:
-            result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')), "rtype": "device"}
+        result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + self.type)), "rtype": self.type}
         return result
 
     def getObjectPath(self) -> dict[str, str]:
@@ -332,8 +295,6 @@ class Group:
             dict[str, Any]: The group's data.
         """
         result = {"id_v2": self.id_v2, "name": self.name, "class": self.icon_class, "lights": [], "action": self.action, "type": self.type}
-        if hasattr(self, "owner") and self.owner is not None:
-            result["owner"] = self.owner.username
         for light_ref in self.lights:
             light_instance = light_ref()
             if light_instance is None:

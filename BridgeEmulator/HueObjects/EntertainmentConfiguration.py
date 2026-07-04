@@ -2,7 +2,7 @@ import uuid
 import logManager
 import weakref
 from datetime import datetime, timezone
-from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, StreamEvent, Light
+from HueObjects import genV2Uuid, v1StateToV2, v2StateToV1, setGroupAction, StreamEvent, update_state, Light
 from typing import Any, List, Optional, Union
 
 logging = logManager.logger.get_logger(__name__)
@@ -47,23 +47,19 @@ class EntertainmentConfiguration:
                 setattr(self, key, value)
         self._send_stream_event(self.getV2Api(), "update")
 
-    def update_state(self) -> dict[str, bool]:
-        all_on = bool(self.lights)
-        any_on = False
-        for light_ref in self.lights:
-            light_obj: Optional[Light.Light] = light_ref()
-            if light_obj and light_obj.state["on"]:
-                any_on = True
-            else:
-                all_on = False
-        return {"all_on": all_on, "any_on": any_on}
-
     def getV2GroupedLight(self) -> dict[str, Any]:
         result = {
             "alert": {"action_values": ["breathe"]},
             "id": self.id_v2,
             "id_v1": f"/groups/{self.id_v1}",
-            "on": {"on": self.update_state()["any_on"]},
+            "on": {"on": update_state(self)["any_on"]},
+            "dimming": {"brightness": update_state(self)["avr_bri"]},
+            "dimming_delta": {},
+            "color": {},
+            "color_temperature": {},
+            "color_temperature_delta": {},
+            "signaling": {"signal_values": ["no_signal", "on_off"]},
+            "dynamics": {},
             "type": "grouped_light"
         }
         result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment_configuration')), "rtype": "entertainment_configuration"}
@@ -89,7 +85,7 @@ class EntertainmentConfiguration:
             "lights": lights,
             "sensors": sensors,
             "type": self.type,
-            "state": self.update_state(),
+            "state": update_state(self),
             "recycle": False,
             "class": class_type,
             "action": self.action,

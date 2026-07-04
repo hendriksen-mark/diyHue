@@ -200,12 +200,6 @@ class Config:
                         lightObj = self.yaml_config["lights"][light]
                         e_group.locations[lightObj] = location
             else:
-                if "owner" in data and isinstance(data["owner"], dict):
-                    data["owner"] = self.yaml_config["apiUsers"][list(self.yaml_config["apiUsers"])[0]]
-                elif "owner" not in data:
-                    data["owner"] = self.yaml_config["apiUsers"][list(self.yaml_config["apiUsers"])[0]]
-                else:
-                    data["owner"] = self.yaml_config["apiUsers"][data["owner"]]
                 self.yaml_config["groups"][group] = Group.Group(data)
                 group_obj: Group.Group = self.yaml_config["groups"][group]
                 for light in data["lights"]:

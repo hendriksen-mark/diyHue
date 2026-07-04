@@ -1,7 +1,7 @@
 import uuid
 import logManager
 import random
-from typing import Any
+from typing import Any, Union
 
 logging = logManager.logger.get_logger(__name__)
 
@@ -78,7 +78,7 @@ def setGroupAction(group, state: dict[str, Any], scene = None) -> None:
     for device, state in queueState.items():
         state["object"].setV1State(state)
 
-    group.state = group.update_state()
+    group.state = update_state(group)
 
 def updateGroupActionColormode(group, state: dict[str, Any]) -> None:
     if "xy" in state:
@@ -132,3 +132,31 @@ def incProcess(state: dict[str, Any], data: dict[str, Any]) -> dict[str, Any]:
         data["sat"] = state["sat"]
         del data["sat_inc"]
     return data
+
+def update_state(group) -> dict[str, Union[bool, int]]:
+    """
+    Updates and returns the group's state.
+
+    Returns:
+        dict[str, Union[bool, int]]: Dictionary containing the updated state.
+    """
+    all_on = True
+    any_on = False
+    bri = 0
+    lights_on = 0
+    if not group.lights:
+        all_on = False
+    for light_ref in group.lights:
+        light_instance = light_ref()
+        if light_instance is None:
+            continue
+        if light_instance.state["on"]:
+            any_on = True
+            if "bri" in light_instance.state:
+                bri += light_instance.state["bri"]
+                lights_on += 1
+        else:
+            all_on = False
+    if any_on:
+        bri = (((bri / lights_on) / 254) * 100) if bri > 0 else 0
+    return {"all_on": all_on, "any_on": any_on, "avr_bri": int(bri)}
