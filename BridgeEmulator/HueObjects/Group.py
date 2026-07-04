@@ -275,7 +275,7 @@ class Group:
             "type": "grouped_light",
             "signaling": {"signal_values": ["no_signal", "on_off"]}
         }
-        result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + self.type)), "rtype": self.type}
+        result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + self.type.lower())), "rtype": self.type.lower()}
         return result
 
     def getObjectPath(self) -> dict[str, str]:
