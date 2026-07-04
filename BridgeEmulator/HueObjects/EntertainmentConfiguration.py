@@ -66,7 +66,7 @@ class EntertainmentConfiguration:
             "on": {"on": self.update_state()["any_on"]},
             "type": "grouped_light"
         }
-        result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')), "rtype": "device"}
+        result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment_configuration')), "rtype": "entertainment_configuration"}
         return result
 
     def getV1Api(self) -> dict[str, Any]:
