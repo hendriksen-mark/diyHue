@@ -312,7 +312,7 @@ class Group:
                 apiuser = f"{apiuser[:8]}-{apiuser[8:12]}-{apiuser[12:16]}-{apiuser[16:20]}-{apiuser[20:]}"
             result["owner"] = {"rid": apiuser, "rtype": "device"}
         else:
-            result["owner"] = {"rid": self.id_v2, "rtype": "device"}
+            result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')), "rtype": "device"}
         return result
 
     def getObjectPath(self) -> dict[str, str]:

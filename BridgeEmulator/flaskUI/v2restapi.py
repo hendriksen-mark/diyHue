@@ -298,13 +298,13 @@ class ClipV2(Resource):
                 group: Group.Group = group
                 data.append(group.getV2Zone())
         # entertainment_configuration
-            if group.type == "Entertainment":
+            elif group.type == "Entertainment":
                 e_group = cast(EntertainmentConfiguration.EntertainmentConfiguration, group)
                 data.append(e_group.getV2Api())
+                data.append(e_group.getV2GroupedLight())
+                continue
         # grouped_light
-            elif group.type not in ["Entertainment"]:
-                group: Group.Group = group
-                data.append(group.getV2GroupedLight())
+            data.append(group.getV2GroupedLight())
         # behavior_instance
         for key, instance in bridgeConfig["behavior_instance"].items():
             instance: BehaviorInstance.BehaviorInstance = instance
@@ -371,9 +371,8 @@ class ClipV2Resource(Resource):
                     response["data"].append(group.getV2Zone())
         elif resource == "grouped_light":
             for key, group in bridgeConfig["groups"].items():
-                if group.type not in ["Entertainment"]:
-                    group: Group.Group = group
-                    response["data"].append(group.getV2GroupedLight())
+                group: Group.Group = group
+                response["data"].append(group.getV2GroupedLight())
         elif resource == "zigbee_connectivity":
             for key, light in bridgeConfig["lights"].items():
                 light: Light.Light = light
