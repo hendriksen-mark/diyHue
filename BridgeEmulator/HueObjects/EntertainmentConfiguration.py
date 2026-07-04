@@ -59,13 +59,15 @@ class EntertainmentConfiguration:
         return {"all_on": all_on, "any_on": any_on}
 
     def getV2GroupedLight(self) -> dict[str, Any]:
-        return {
+        result = {
             "alert": {"action_values": ["breathe"]},
             "id": self.id_v2,
             "id_v1": f"/groups/{self.id_v1}",
             "on": {"on": self.update_state()["any_on"]},
             "type": "grouped_light"
         }
+        result["owner"] = {"rid": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'device')), "rtype": "device"}
+        return result
 
     def getV1Api(self) -> dict[str, Any]:
         lights: List[str] = []
