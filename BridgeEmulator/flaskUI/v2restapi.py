@@ -45,7 +45,7 @@ def getObject(element, v2uuid):
                 v2Resources[element][v2uuid] = weakref.ref(obj)
                 return obj
     else:
-        for v1Element in ["lights", "groups", "scenes", "sensors", "geofence_clients"]:
+        for v1Element in ["lights", "groups", "scenes", "sensors", "geofence_client"]:
             for key, obj in bridgeConfig[v1Element].items():
                 if str(uuid.uuid5(uuid.NAMESPACE_URL, obj.id_v2 + element)) == v2uuid:
                     logging.debug("Cache Miss " + element)
@@ -577,7 +577,7 @@ class ClipV2Resource(Resource):
 
             bridgeConfig["groups"][new_object_id] = newObject
         elif resource == 'geofence_client':
-            new_object_id = nextFreeId(bridgeConfig, "geofence_clients")
+            new_object_id = nextFreeId(bridgeConfig, "geofence_client")
             objCreation = {
                 "id_v1": new_object_id,
                 "name": postDict["name"],
@@ -585,7 +585,7 @@ class ClipV2Resource(Resource):
                 "is_at_home": postDict.get("is_at_home", False)
             }
             newObject = GeofenceClient.GeofenceClient(objCreation)
-            bridgeConfig["geofence_clients"][new_object_id] = newObject
+            bridgeConfig["geofence_client"][new_object_id] = newObject
         else:
             return {
                 "errors": [{
