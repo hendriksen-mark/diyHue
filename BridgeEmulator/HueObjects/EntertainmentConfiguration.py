@@ -118,7 +118,7 @@ class EntertainmentConfiguration:
             "channels": [],
             "id": str(uuid.uuid5(uuid.NAMESPACE_URL, self.id_v2 + 'entertainment_configuration')),
             "type": "entertainment_configuration",
-            "name": self.name,
+            #"name": self.name, depricated in v2 api, use metadata.name instead
             "status": "active" if self.stream["active"] else "inactive"
         }
         if self.stream["active"]:

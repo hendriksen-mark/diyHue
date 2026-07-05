@@ -18,6 +18,8 @@ from services.updateManager import githubCheck, versionCheck, githubInstall
 from werkzeug.security import generate_password_hash
 from lights.light_types import lightTypes
 from typing import Any, Sequence, TypeAlias, cast
+from aiohue import HueBridgeV2
+import asyncio
 
 try:
     from time import tzset
@@ -75,6 +77,15 @@ def buildConfig() -> dict[str, Any]:
                                     "last use date": user.last_use_date, "name": user.name}
     return result
 
+async def aiohue_test(username: str) -> dict[str, Any]:
+    HOST_IP = configManager.runtimeConfig.arg["HOST_IP"]
+
+    async with HueBridgeV2(HOST_IP, username) as bridge:
+        logging.debug(f"aiohue test successful")
+        devices_found = []
+        for item in bridge.devices:
+            devices_found.append(item.metadata.name)
+        return {"message": "aiohue test successful", "devices": devices_found}
 
 class NewUser(Resource):
     def get(self) -> list[dict[str, Any]]:
@@ -142,6 +153,8 @@ class ResourceElements(Resource):
         if "success" in authorisation:
             if resource == "capabilities":
                 return capabilities()
+            elif resource == "aiohue_test":
+                return asyncio.run(aiohue_test(username))
             else:
                 response = {}
                 if resource in ["lights", "groups", "scenes", "rules", "resourcelinks", "schedules", "sensors", "apiUsers"]:
