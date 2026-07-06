@@ -9,8 +9,13 @@ import weakref
 from copy import deepcopy
 from HueObjects import Light, Group, EntertainmentConfiguration, Scene, ApiUser, Rule, ResourceLink, Schedule, Sensor, BehaviorInstance, SmartScene
 from typing import Any, Optional, cast
+import shutil
+from pathlib import Path
+import zipfile
+import tempfile
 import glob
 import re
+from datetime import datetime, timezone
 import sys
 
 try:
@@ -53,6 +58,8 @@ class Config:
     argsDict: dict[str, Any]
     configDir: str
     runningDir: str
+    serverCreateTime: str
+    WebUICreateTime: str
 
     def __init__(self) -> None:
         """
@@ -62,6 +69,8 @@ class Config:
         self.argsDict = {}
         self.configDir = ""
         self.runningDir = ""
+        self.serverCreateTime = ""
+        self.WebUICreateTime = ""
 
     def ensure_config_dir(self) -> None:
         """
@@ -369,21 +378,23 @@ class Config:
         """
         Reset the configuration to default values.
         """
-        self.save_config(backup=True)
+        backup = self.save_config(backup=True)
         try:
-            subprocess.run(f'rm -r {self.configDir}/*.yaml', check=True)
-        except subprocess.CalledProcessError:
+            for yaml_file in Path(self.configDir).glob("*.yaml"):
+                os.remove(yaml_file)
+        except OSError:
             logging.exception("Something went wrong when deleting the config")
         self.load_config()
+        return backup
 
     def remove_cert(self) -> None:
         """
         Remove the current certificate and generate a new one.
         """
         try:
-            subprocess.run(f'mv {self.configDir}/cert.pem {self.configDir}/backup/', check=True)
+            shutil.move(self.configDir + '/cert.pem', self.configDir + '/backup/')
             logging.info("Certificate removed")
-        except subprocess.CalledProcessError:
+        except:
             logging.exception("Something went wrong when deleting the certificate")
         generate_certificate(self.argsDict["MAC"], self.configDir, self.runningDir)
 
@@ -392,11 +403,14 @@ class Config:
         Restore the configuration from a backup.
         """
         try:
-            subprocess.run(f'rm -r {self.configDir}/*.yaml', check=True)
-        except subprocess.CalledProcessError:
+            for yaml_file in Path(self.configDir).glob("*.yaml"):
+                os.remove(yaml_file)
+        except OSError:
             logging.exception("Something went wrong when deleting the config")
-        subprocess.run(f'cp -r {self.configDir}/backup/*.yaml {self.configDir}/', shell=True, check=True)
-        self.load_config()
+        for yaml_file in Path(self.configDir, "backup").glob("*.yaml"):
+            shutil.copy(yaml_file, self.configDir)
+        load = self.load_config()
+        return load
 
     def download_config(self) -> str:
         """
@@ -406,8 +420,12 @@ class Config:
             str: The path to the tar file containing the configuration.
         """
         self.save_config()
-        subprocess.run(f'tar --exclude=\'config_debug.yaml\' -cvf {self.configDir}/config.tar ' + self.configDir + '/*.yaml', shell=True, capture_output=True, text=True)
-        return f"{self.configDir}/config.tar"
+        zip_path = str(Path(self.configDir) / "config.zip")
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for yaml_file in Path(self.configDir).glob("*.yaml"):
+                if yaml_file.name != "config_debug.yaml":
+                    zf.write(yaml_file, yaml_file.name)
+        return zip_path
 
     def download_log(self) -> str:
         """
@@ -418,9 +436,12 @@ class Config:
         """
         debug_logs_dir = self.create_debug_logs()
         log_path = f"{debug_logs_dir}/*.log*"
-        subprocess.run(f'tar -cvf {self.configDir}/diyhue_log.tar {log_path}', shell=True, check=True)
-        subprocess.run(f'rm -r {debug_logs_dir}', shell=True, check=True)
-        return f"{self.configDir}/diyhue_log.tar"
+        zip_path = str(Path(self.configDir) / "diyhue_log.zip")
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for log_file in glob.glob(log_path):
+                zf.write(log_file, os.path.basename(log_file))
+        shutil.rmtree(debug_logs_dir)
+        return zip_path
 
     def download_debug(self) -> str:
         """
@@ -455,18 +476,25 @@ class Config:
         info["Architecture"] = os.uname().machine
         info["os_version"] = os.uname().version
         info["os_release"] = os.uname().release
-        info["Hue-Emulator Version"] = subprocess.run("stat -c %y HueEmulator3.py", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
-        info["WebUI Version"] = subprocess.run("stat -c %y flaskUI/templates/index.html", shell=True, capture_output=True, text=True).stdout.replace("\n", "")
+        info["Server Version"] = self.serverCreateTime
+        info["WebUI Version"] = self.WebUICreateTime
         info["arguments"] = {k: str(v) for k, v in self.argsDict.items()}
-        _write_yaml(f"{self.configDir}/config_debug.yaml", debug)
-        _write_yaml(f"{self.configDir}/system_info.yaml", info)
-
-        debug_logs_dir = self.create_debug_logs()
-        log_path = f"{debug_logs_dir}/*.log*"
-        
-        subprocess.run(f'tar --exclude=\'config.yaml\' -cvf {self.configDir}/config_debug.tar {self.configDir}/*.yaml {log_path} ', shell=True, capture_output=True, text=True)
-        subprocess.run(f'rm -r {self.configDir}/config_debug.yaml {debug_logs_dir}', shell=True, capture_output=True, text=True)
-        return f"{self.configDir}/config_debug.tar"
+        zip_path = str(Path(self.configDir) / "config_debug.zip")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            _write_yaml(str(temp_path / "config_debug.yaml"), debug)
+            _write_yaml(str(temp_path / "system_info.yaml"), info)
+            debug_logs_dir = self.create_debug_logs()
+            log_path = f"{debug_logs_dir}/*.log*"
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for yaml_file in Path(self.configDir).glob("*.yaml"):
+                    if yaml_file.name != "config.yaml":
+                        zf.write(yaml_file, yaml_file.name)
+                for temp_file in temp_path.glob("*.yaml"):
+                    zf.write(temp_file, temp_file.name)
+                for log_file in Path(log_path).glob("*.log*"):
+                    zf.write(log_file, log_file.name)
+        return zip_path
 
     def write_args(self, args: dict[str, Any]) -> None:
         """

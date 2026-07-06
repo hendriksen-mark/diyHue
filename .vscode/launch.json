@@ -16,7 +16,7 @@
         "--config_path",
         "${workspaceFolder}/config",
         "--debug",
-        "--bind-ip",
+        "--ip",
         "XXX.XXX.XXX.XXX"
       ],
       "console": "integratedTerminal",

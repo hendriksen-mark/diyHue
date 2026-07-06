@@ -1,4 +1,6 @@
 from typing import cast
+from datetime import datetime, timezone
+import os
 from configManager import configHandler
 from configManager import argumentHandler
 from configManager import runtimeConfigHandler
@@ -23,6 +25,10 @@ if not isinstance(running_path, str):
 
 bridgeConfig.configDir = config_path
 bridgeConfig.runningDir = running_path
+serverCreateEpoch = os.stat(f"{bridgeConfig.runningDir}/HueEmulator3.py").st_mtime
+bridgeConfig.serverCreateTime = datetime.fromtimestamp(serverCreateEpoch, timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+webUICreateEpoch = os.stat(f"{bridgeConfig.runningDir}/flaskUI/templates/index.html").st_mtime
+bridgeConfig.WebUICreateTime = datetime.fromtimestamp(webUICreateEpoch, timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 # Ensure config directory exists
 bridgeConfig.ensure_config_dir()
